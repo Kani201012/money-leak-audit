@@ -15,7 +15,7 @@ from modules.scan_history import save_scan, load_history
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Growth OS Terminal", layout="wide", initial_sidebar_state="collapsed")
 
-# --- SMART CURRENCY LOGIC (NEW) ---
+# --- SMART CURRENCY LOGIC ---
 def get_currency_symbol(location_text):
     """
     Automatically detects currency based on the location string.
@@ -59,7 +59,7 @@ st.markdown("""
     
     /* Card Styling */
     .metric-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; border: 1px solid #eee; }
-    .lead-card { background: white; padding: 20px; border-radius: 10px; border-left: 5px solid #4F46E5; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .lead-card { background: white; padding: 15px; border-radius: 10px; border-left: 5px solid #4F46E5; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     
     /* Typography */
     h1 { color: #111827; font-weight: 800; letter-spacing: -0.5px; }
@@ -126,7 +126,7 @@ if selected == "Prospector":
             if not raw_leads:
                 st.warning("No leads found. Check API Key or try a larger city.")
             else:
-                # NEW: Inject Location into lead data so we remember the currency later
+                # Inject Location for Currency Memory
                 for lead in raw_leads:
                     lead['search_location'] = location 
                 
@@ -147,43 +147,72 @@ if selected == "Prospector":
             st.experimental_rerun()
             
         for lead in results:
-            # NEW: Detect Currency based on lead's location
-            loc = lead.get('search_location', location) # Fallback to input if missing
+            # Detect Currency
+            loc = lead.get('search_location', location) 
             currency_symbol = get_currency_symbol(loc)
 
-            # Normalize & Audit Logic
+            # Normalize & Audit
             data = normalize_gbp_data(lead)
             audit = calculate_rli_score(data)
-            roi = calculate_money_loss(audit['rli_score'], 500, 50) # Avg sale $500, 50 calls
+            roi = calculate_money_loss(audit['rli_score'], 500, 50) 
             
-            # Display Lead Card
+            # --- LEAD CARD (RICH UI) ---
             with st.container():
+                # HTML Card
                 st.markdown(f"""
                 <div class="lead-card">
-                    <h3>{data['name']}</h3>
-                    <p>📍 {data['address']} | ⭐ {data['rating']} ({data['reviews']})</p>
-                    <p style="color: #D32F2F; font-weight: bold;">MONTHLY GAP: {currency_symbol}{roi['monthly_loss_min']:,}</p>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h3 style="margin:0;">{data['name']}</h3>
+                            <p style="margin:5px 0 0 0; color:#666;">📍 {data['address']}</p>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:1.2em; font-weight:bold;">⭐ {data['rating']}</div>
+                            <div style="font-size:0.8em; color:#888;">({data['reviews']} revs)</div>
+                        </div>
+                    </div>
+                    <hr style="margin:10px 0; border:0; border-top:1px solid #eee;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color: #D32F2F; font-weight: bold; background:#fff0f0; padding:4px 8px; border-radius:4px;">
+                            GAP: {currency_symbol}{roi['monthly_loss_min']:,}/mo
+                        </span>
+                        <span style="color: #444; font-size:0.9em;">
+                            📞 {lead.get('phone', 'N/A')}
+                        </span>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    # Save to Pipeline Button
-                    if st.button(f"📥 Add to Pipeline", key=f"add_{lead['place_id']}"):
+                # ACTION TOOLBAR
+                c1, c2, c3, c4 = st.columns([1, 1, 1, 1])
+                
+                with c1:
+                    if lead.get('maps_url'):
+                        st.link_button("📍 View Map", lead['maps_url'], use_container_width=True)
+                    else:
+                        st.button("📍 No Map", disabled=True, use_container_width=True, key=f"nomap_{lead['place_id']}")
+                
+                with c2:
+                    if lead.get('website'):
+                        st.link_button("🌐 Website", lead['website'], use_container_width=True)
+                    else:
+                        st.button("🚫 No Site", disabled=True, use_container_width=True, key=f"noweb_{lead['place_id']}")
+                        
+                with c3:
+                    if st.button(f"📥 Track", key=f"add_{lead['place_id']}", use_container_width=True):
                         lead['audit_score'] = audit['rli_score']
                         lead['monthly_gap'] = roi['monthly_loss_min']
-                        lead['currency'] = currency_symbol # NEW: Save currency to Pipeline
-                        
+                        lead['currency'] = currency_symbol
                         if add_lead(lead):
-                            st.toast(f"Target {data['name']} Acquired!", icon="✅")
+                            st.toast("Target Acquired!", icon="✅")
                         else:
-                            st.toast("Target already in pipeline.", icon="⚠️")
-                with col_b:
-                    # Instant Report Generation (Passing 'data' and 'currency_symbol')
+                            st.toast("Already Tracking", icon="⚠️")
+                            
+                with c4:
                     pdf = create_audit_pdf(data['name'], audit, roi, currency_symbol, data)
-                    st.download_button("📄 Download Audit", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"dl_{lead['place_id']}")
+                    st.download_button("📄 Report", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"dl_{lead['place_id']}", use_container_width=True)
 
-    # 5. SHOW HISTORY ARCHIVE
+    # 5. SHOW HISTORY
     st.divider()
     with st.expander("📂 Scan History (Market Archive)"):
         history = load_history()
@@ -207,7 +236,7 @@ if selected == "Pipeline":
     st.markdown("## Mission Control")
     m1, m2, m3 = st.columns(3)
     m1.metric("Active Targets", count)
-    m2.metric("Pipeline Potential", f"${val:,.0f}") # Pipeline total is usually in base currency
+    m2.metric("Pipeline Potential", f"${val:,.0f}") 
     m3.metric("Deployment Phase", "Active")
     
     st.divider()
@@ -217,14 +246,29 @@ if selected == "Pipeline":
     if not db:
         st.info("Pipeline is empty. Go to Prospector to add targets.")
     else:
-        # Pipeline Display
         for lead in db:
-            # NEW: Use saved currency or default to $
             currency_symbol = lead.get('currency', "$")
             
             with st.expander(f"{lead['business_name']} | Gap: {currency_symbol}{lead.get('monthly_gap', 0):,}", expanded=False):
                 
-                # Top Row: Metrics
+                # ACTION BAR IN PIPELINE
+                c_map, c_web, c_regen = st.columns([1, 1, 2])
+                with c_map:
+                    if lead.get('maps_url'): st.link_button("📍 View Map", lead['maps_url'])
+                with c_web:
+                    if lead.get('website'): st.link_button("🌐 Visit Website", lead['website'])
+                with c_regen:
+                    # Regenerate Report Logic
+                    if st.button("📄 Regenerate Report", key=f"regen_{lead['place_id']}"):
+                        data = normalize_gbp_data(lead)
+                        audit = calculate_rli_score(data)
+                        roi = calculate_money_loss(audit['rli_score'], 500, 50)
+                        pdf = create_audit_pdf(data['name'], audit, roi, currency_symbol, data)
+                        st.download_button("Download Now", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"re_dl_{lead['place_id']}")
+                
+                st.divider()
+
+                # STATUS & ACTIONS
                 p1, p2, p3 = st.columns([2,1,1])
                 with p1:
                     st.caption("Status")
@@ -253,7 +297,7 @@ if selected == "Pipeline":
                         delete_lead(lead['place_id'])
                         st.experimental_rerun()
 
-                # Bottom Row: Action Center
+                # EMAIL & CHECKLIST
                 tab1, tab2 = st.tabs(["📧 Sales Sequence", "✅ Mission Objectives"])
                 
                 with tab1:
@@ -263,18 +307,14 @@ if selected == "Pipeline":
                     
                     st.text_input("Subject", value=subj, key=f"subj_{lead['place_id']}")
                     st.text_area("Email Body", value=body, height=250, key=f"body_{lead['place_id']}")
-                    st.caption("Copy this text into your email client.")
                     
                 with tab2:
-                    # NEW: REGENERATE REPORT BUTTON IN PIPELINE
-                    if st.button("📄 Regenerate Report", key=f"regen_{lead['place_id']}"):
-                        data = normalize_gbp_data(lead)
-                        audit = calculate_rli_score(data)
-                        roi = calculate_money_loss(audit['rli_score'], 500, 50)
-                        pdf = create_audit_pdf(data['name'], audit, roi, currency_symbol, data)
-                        st.download_button("Download Now", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"re_dl_{lead['place_id']}")
+                    st.checkbox("Verify Business Ownership", key=f"c1_{lead['place_id']}")
+                    st.checkbox("Draft Personalized Gap Report", key=f"c2_{lead['place_id']}")
+                    st.checkbox("Initial Outreach Call", key=f"c3_{lead['place_id']}")
+                    st.checkbox("Technical Audit Presentation", key=f"c4_{lead['place_id']}")
 
-# --- VIEW 4: MISSION CONTROL (Analytics) ---
+# --- VIEW 4: MISSION CONTROL ---
 if selected == "Mission Control":
     st.markdown("## Deployment Registry")
     db = load_db()

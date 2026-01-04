@@ -5,9 +5,10 @@ import urllib.parse
 
 def find_leads(keyword, location):
     """
-    MODULE 1: PROSPECTOR (HUNTER EDITION)
-    FILTERS: Removes "Perfect" businesses.
-    SORTS: Shows "Weakest" prospects first.
+    MODULE 1: PROSPECTOR (RUTHLESS FILTER EDITION)
+    Logic:
+    1. Skips 'Perfect' businesses (High Rating + Website + Reviews).
+    2. Sorts results to show the 'Worst' profiles first.
     """
     
     api_key = st.secrets.get("SERPAPI_KEY")
@@ -32,24 +33,29 @@ def find_leads(keyword, location):
         cleaned_leads = []
         
         for result in local_results:
-            # --- EXTRACT DATA ---
+            # --- DATA EXTRACTION ---
+            
+            # Photos
             photo_data = result.get("photos_link")
             photos_count = 0
             if isinstance(photo_data, dict):
                 photos_count = photo_data.get("count", 0)
             
+            # Website (Deep Check)
             website = result.get("website")
             if not website: website = result.get("links", {}).get("website")
             
+            # Rating
             try: rating = float(result.get("rating", 0))
             except: rating = 0.0
             
+            # Reviews
             reviews = int(result.get("reviews", 0))
 
-            # --- HUNTER FILTER (THE NEW LOGIC) ---
-            # If they are "Too Good", SKIP them.
-            # Definition of "Too Good": Has Website AND > 4.5 Rating AND > 100 Reviews
-            if website and rating >= 4.5 and reviews > 100:
+            # --- THE RUTHLESS FILTER (SKIP THE WINNERS) ---
+            # If a business has a Website AND Good Rating (>4.0) AND Established (>20 reviews)
+            # We SKIP them. They are not good prospects.
+            if website and rating > 4.0 and reviews > 20:
                 continue 
 
             # --- MAP LINK ---
@@ -58,15 +64,14 @@ def find_leads(keyword, location):
                 query = urllib.parse.quote(f"{result.get('title')} {result.get('address')}")
                 maps_url = f"https://www.google.com/maps/search/?api=1&query={query}"
 
-            # Calculate "Weakness Score" for Sorting (Higher = Better Prospect)
-            # No Website = +50 pts
-            # < 20 Reviews = +30 pts
-            # Rating < 4.0 = +20 pts
+            # --- WEAKNESS SORTING SCORE ---
+            # We calculate a score to push the WORST businesses to the top of the UI
             weakness_score = 0
-            if not website: weakness_score += 50
-            if reviews < 20: weakness_score += 30
-            if rating < 4.0: weakness_score += 20
-            if photos_count < 5: weakness_score += 10
+            
+            if not website: weakness_score += 1000  # No Website = #1 Priority
+            if rating < 4.0: weakness_score += 500  # Bad Rating = #2 Priority
+            if reviews < 10: weakness_score += 200  # New/Empty = #3 Priority
+            if photos_count < 5: weakness_score += 50
 
             cleaned_leads.append({
                 "business_name": result.get("title", "Unknown Business"),
@@ -81,11 +86,10 @@ def find_leads(keyword, location):
                 "maps_url": maps_url,
                 "posts_active": False,
                 "owner_response_rate": 0.5,
-                "weakness_score": weakness_score # Internal metric for sorting
+                "weakness_score": weakness_score
             })
         
-        # --- SORT LOGIC ---
-        # Sort list so the "Weakest" (Highest Score) appear first
+        # Sort by Weakness Score (Highest weakness first)
         cleaned_leads.sort(key=lambda x: x['weakness_score'], reverse=True)
             
         return cleaned_leads
@@ -95,36 +99,36 @@ def find_leads(keyword, location):
         return []
 
 def _simulate_data(keyword, location):
-    """Simulation: returns mostly weak leads for demo"""
+    """Simulation"""
     import time
     time.sleep(1)
     return [
         {
-            "business_name": f"{keyword} Broken Profile",
+            "business_name": f"{keyword} Neglected",
             "place_id": "SIM_001",
-            "rating": 3.2,
-            "reviews": 8,
+            "rating": 2.5,
+            "reviews": 4,
             "categories": [keyword],
             "phone": "+1 555-0101",
             "address": f"101 Main St, {location}",
-            "website": None, # TARGET!
-            "photos_count": 2,
+            "website": None, # NO WEBSITE
+            "photos_count": 1,
             "maps_url": "https://google.com/maps", 
             "posts_active": False,
-            "weakness_score": 90
+            "weakness_score": 1500
         },
         {
-            "business_name": f"{location} {keyword} Inc",
+            "business_name": f"{location} Low Rated",
             "place_id": "SIM_002",
-            "rating": 4.0,
-            "reviews": 25,
+            "rating": 3.2,
+            "reviews": 50,
             "categories": [keyword],
             "phone": "+1 555-0202",
             "address": f"200 Side St, {location}",
-            "website": "https://badsite.com",
+            "website": "https://exist.com",
             "photos_count": 5,
             "maps_url": "https://google.com/maps", 
             "posts_active": False,
-            "weakness_score": 40
+            "weakness_score": 500
         }
     ]

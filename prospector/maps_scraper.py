@@ -1,12 +1,12 @@
 import requests
 import streamlit as st
 import random
-import urllib.parse # <--- Added for link construction
+import urllib.parse
 
 def find_leads(keyword, location):
     """
-    MODULE 1: PROSPECTOR (ROBUST EDITION + MAP LINKS)
-    Connects to SerpAPI with crash-protection and extracts Map URLs.
+    MODULE 1: PROSPECTOR (V3.1 - ACCURACY & DEEP LINKS)
+    Fixes: Photo Count Accuracy (0 instead of 5), Deep Website Extraction, Map Links.
     """
     
     # 1. GET API KEY
@@ -17,17 +17,14 @@ def find_leads(keyword, location):
         "engine": "google_maps",
         "q": f"{keyword} in {location}",
         "type": "search",
-        "ll": "@40.7455096,-74.0083012,14z" # Optional centering
+        "ll": "@40.7455096,-74.0083012,14z" 
     }
     
-    # If using real key, add it to params
-    if api_key:
-        params["api_key"] = api_key
+    if api_key: params["api_key"] = api_key
 
     try:
         # 3. CALL API (Or Simulate if no key)
         if not api_key:
-            # Fallback for demo purposes if user hasn't set secrets yet
             return _simulate_data(keyword, location)
 
         search = requests.get("https://serpapi.com/search", params=params)
@@ -44,29 +41,29 @@ def find_leads(keyword, location):
         cleaned_leads = []
         
         for result in local_results:
-            # --- SAFE EXTRACTION LOGIC ---
-            
-            # Photos: Check if it's a dictionary or a string to prevent the 'str' error
+            # --- 1. ACCURATE PHOTO EXTRACTION (THE FIX) ---
+            # We explicitly default to 0 to catch "Visual Void" businesses
             photo_data = result.get("photos_link")
-            photos_count = 5 # Default low number
-            
+            photos_count = 0
             if isinstance(photo_data, dict):
-                photos_count = photo_data.get("count", 5)
+                photos_count = photo_data.get("count", 0)
             
-            # Phone: Ensure it exists
-            phone = result.get("phone", "N/A")
+            # --- 2. ACCURATE WEBSITE EXTRACTION (THE FIX) ---
+            # Sometimes SerpAPI hides the website in a 'links' dictionary
+            website = result.get("website")
+            if not website:
+                website = result.get("links", {}).get("website")
             
-            # Rating: Ensure it's a float
+            # --- 3. RATING SAFETY ---
             try:
                 rating = float(result.get("rating", 0))
             except:
                 rating = 0.0
 
-            # --- NEW: MAPS LINK LOGIC ---
+            # --- 4. MAP LINK GENERATION ---
             # Try to get the direct link. If missing, construct a search query link.
             maps_url = result.get("gps_coordinates", {}).get("link")
             if not maps_url:
-                # Fallback: Create a Google Maps Search Link
                 query = f"{result.get('title')} {result.get('address')}"
                 encoded_query = urllib.parse.quote(query)
                 maps_url = f"https://www.google.com/maps/search/?api=1&query={encoded_query}"
@@ -77,11 +74,11 @@ def find_leads(keyword, location):
                 "rating": rating,
                 "reviews": int(result.get("reviews", 0)),
                 "categories": [result.get("type", "Business")],
-                "phone": phone,
+                "phone": result.get("phone", "N/A"),
                 "address": result.get("address", "Unknown Address"),
-                "website": result.get("website"), # Can be None, handled in audit
+                "website": website, 
                 "photos_count": photos_count,
-                "maps_url": maps_url, # <--- Added Field
+                "maps_url": maps_url,
                 "posts_active": False, # API limitation, assume False for audit pressure
                 "owner_response_rate": 0.5
             })
@@ -90,7 +87,6 @@ def find_leads(keyword, location):
 
     except Exception as e:
         st.error(f"Scraping Error: {str(e)}")
-        # Return empty list so app doesn't crash completely
         return []
 
 def _simulate_data(keyword, location):
@@ -110,7 +106,7 @@ def _simulate_data(keyword, location):
             "address": f"101 Main St, {location}",
             "website": "https://example.com",
             "photos_count": 50,
-            "maps_url": "https://google.com/maps", # Dummy Link
+            "maps_url": "https://google.com/maps", 
             "posts_active": True,
             "owner_response_rate": 0.9
         },
@@ -123,8 +119,8 @@ def _simulate_data(keyword, location):
             "phone": "+1 555-0202",
             "address": f"200 Side St, {location}",
             "website": None,
-            "photos_count": 2,
-            "maps_url": "https://google.com/maps", # Dummy Link
+            "photos_count": 0,
+            "maps_url": "https://google.com/maps", 
             "posts_active": False,
             "owner_response_rate": 0.0
         }

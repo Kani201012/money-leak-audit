@@ -1,6 +1,6 @@
 streamlit
 pandas
 requests
-jinja2
 weasyprint
+jinja2
 plotly

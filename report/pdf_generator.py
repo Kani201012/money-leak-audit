@@ -1,32 +1,89 @@
 from weasyprint import HTML
 
-def create_audit_pdf(business_name, audit_result, roi_result, currency):
+def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_data):
     """
-    MODULE 5: AUDIT REPORT GENERATOR (HIGH-TICKET SALES EDITION + FONT FIX)
-    100% Text Compliance + Agency-Grade Aesthetic + Linux Font Support.
+    MODULE 5: AUDIT REPORT GENERATOR (DYNAMIC DATA EDITION)
+    100% Text Compliance + Agency-Grade Aesthetic + Linux Font Support + Dynamic Data Injection.
     """
     
-    # --- HELPER: DETECT FAILURES ---
+    # --- HELPER: DETECT FAILURES & GENERATE DYNAMIC TEXT ---
     issues_str = " ".join([str(i) for i in audit_result['issues']]).lower()
     
-    def get_badge(keywords):
+    def get_section_content(keywords, success_text, fail_text_template):
+        # Check if this section failed based on audit issues
+        is_fail = False
         for k in keywords:
             if k.lower() in issues_str:
-                return "<span class='badge badge-fail'>❌ CRITICAL FAIL</span>"
-        return "<span class='badge badge-pass'>✅ PASS</span>"
+                is_fail = True
+                break
+        
+        if is_fail:
+            badge = "<span class='badge badge-fail'>❌ CRITICAL FAIL</span>"
+            # Return the specific failure text
+            content = f"<p class='problem-row'>❌ ANALYSIS: {fail_text_template}</p>"
+        else:
+            badge = "<span class='badge badge-pass'>✅ PASS</span>"
+            # Return the success text
+            content = f"<p style='color: green; font-weight: bold;'>✅ ANALYSIS: {success_text}</p>"
+            
+        return badge, content
 
-    # Status Logic mapping to your 8 Points
-    s1 = get_badge(["review", "rating", "ranking"]) 
-    s2 = get_badge(["photo", "visual", "ctr"])
-    s3 = get_badge(["website", "service", "product"])
-    s4 = get_badge(["review", "reply", "trust"])
-    s5 = get_badge(["post", "offer", "active"])
-    s6 = get_badge(["photo", "visual"])
-    s7 = "<span class='badge badge-warn'>⚠️ RISK DETECTED</span>"
-    s8 = "<span class='badge badge-fail'>❌ LOW SIGNAL</span>"
+    # --- DYNAMIC DATA PREPARATION ---
+    rev_count = lead_data.get('reviews', 0)
+    rating = lead_data.get('rating', 0)
+    photo_count = lead_data.get('photos', 0) # Fallback key if 'photos_count' is used elsewhere
+    if photo_count == 0: photo_count = lead_data.get('photos_count', 0)
+    
+    website_status = "LINKED" if lead_data.get('website') else "MISSING"
 
-    # --- HTML & CSS CONSTRUCTION ---
-    # FIXED: Changed font-family to 'DejaVu Sans' to stop the "Square Box" error on servers.
+    # --- SECTION LOGIC ---
+    
+    # 1. VISIBILITY
+    s1_badge, s1_text = get_section_content(
+        ["ranking", "category"],
+        f"Your listing appears correctly for primary keywords. Good job.",
+        f"Your business is invisible for high-intent keywords. Competitors are outranking you."
+    )
+
+    # 2. CTR (Photos/Visuals impact CTR)
+    s2_badge, s2_text = get_section_content(
+        ["visual", "photo", "ctr"],
+        "Your listing looks active and clickable.",
+        "Your listing looks 'inactive' compared to top competitors, reducing clicks."
+    )
+
+    # 3. CONVERSION (Website)
+    s3_badge, s3_text = get_section_content(
+        ["website", "conversion"],
+        f"Website is {website_status}. Good funnel structure.",
+        f"NO WEBSITE DETECTED. You are losing customers who want to verify you."
+    )
+
+    # 4. REVIEWS (Inject Real Numbers)
+    s4_badge, s4_text = get_section_content(
+        ["review", "trust", "reputation"],
+        f"Strong Trust Signals: {rating} Stars with {rev_count} Reviews.",
+        f"TRUST RISK: You only have {rev_count} reviews and a {rating} rating. Market leaders average 50+ reviews."
+    )
+
+    # 5. POSTS
+    s5_badge, s5_text = get_section_content(
+        ["post", "active", "offer"],
+        "Active Google Posts detected. You are sending fresh signals.",
+        "Zero active Google Posts found. Listing appears 'dormant' to the algorithm."
+    )
+
+    # 6. PHOTOS (Inject Real Numbers)
+    s6_badge, s6_text = get_section_content(
+        ["photo", "visual"],
+        f"Visual Authority High: {photo_count} photos detected.",
+        f"VISUAL VOID: Only {photo_count} photos found. Google prefers listings with 20+ high-quality images."
+    )
+
+    # 7/8. SIGNALS (Hard to measure via API, usually defaulted to risk for sales pressure)
+    s7_badge = "<span class='badge badge-warn'>⚠️ RISK DETECTED</span>"
+
+    # --- HTML CONSTRUCTION ---
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -157,10 +214,9 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
 
         <!-- EXECUTIVE SUMMARY -->
         <div class="exec-box">
-            <h2 style="margin-top:0;">🧠 EXECUTIVE SUMMARY (FOR OWNER)</h2>
-            <p>Your business is visible on Google Maps, but it is <strong>not optimized to capture buyer intent.</strong></p>
-            <p>As a result, high-intent customers are finding competitors instead of you, or abandoning your listing before contacting you.</p>
-            <p><strong>This is not a branding issue — this is a direct revenue leakage problem.</strong></p>
+            <h2 style="margin-top:0;">🧠 EXECUTIVE SUMMARY</h2>
+            <p>Your business is visible on Google Maps, but our audit detected <strong>{len(audit_result['issues'])} specific optimization gaps.</strong></p>
+            <p>These gaps are causing high-intent customers to choose competitors who appear more active and trustworthy.</p>
             
             <div class="impact-banner">
                 📉 ESTIMATED IMPACT:<br>
@@ -173,21 +229,10 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <div class="card">
             <div class="card-header">
                 <span>1️⃣ LOST VISIBILITY → LOST CUSTOMERS</span>
-                {s1}
+                {s1_badge}
             </div>
-            <p class="problem-row">❌ Problem: Your business does not fully appear for high-intent searches.</p>
-            <p>Examples: <em>“buy [product] near me”</em>, <em>“[service] {business_name}”</em>, <em>“open now”</em>.</p>
-            
-            <h3>Why this loses money:</h3>
-            <p>Customers searching these terms are ready to buy NOW. If you are not in the top 3 map results, you are invisible.</p>
-            
-            <h3>Root Causes:</h3>
-            <ul class="cause-list">
-                <li>Weak / incorrect primary category</li>
-                <li>Missing service keywords</li>
-                <li>Low engagement signals</li>
-            </ul>
-            
+            {s1_text}
+            <p><strong>Why this loses money:</strong> Customers searching these terms are ready to buy NOW. If you are not in the top 3 map results, you are invisible.</p>
             <div class="impact-row">
                 💸 Revenue Impact: Even losing 5 calls/day × average sale value = thousands lost monthly.
             </div>
@@ -197,20 +242,10 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <div class="card">
             <div class="card-header">
                 <span>2️⃣ LOW CLICK-THROUGH RATE (CTR)</span>
-                {s2}
+                {s2_badge}
             </div>
-            <p class="problem-row">❌ Problem: When customers see your listing, many do not click.</p>
-            
-            <h3>Why:</h3>
-            <ul class="cause-list">
-                <li>Weak business description</li>
-                <li>No compelling photos</li>
-                <li>No offers or promotions</li>
-                <li>Listing looks “inactive” compared to competitors</li>
-            </ul>
-
+            {s2_text}
             <p><strong>What customers think:</strong> “This business looks outdated or less trustworthy.”</p>
-            
             <div class="impact-row">
                 💸 Revenue Impact: People choose who looks more active, not who is better.
             </div>
@@ -220,14 +255,10 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <div class="card">
             <div class="card-header">
                 <span>3️⃣ BUYER CONFUSION (PRODUCTS/SERVICES)</span>
-                {s3}
+                {s3_badge}
             </div>
-            <p class="problem-row">❌ Problem: Customers cannot clearly see what exactly you sell.</p>
-            <p>They miss: Price range, Availability, Specific Services.</p>
-            
-            <h3>Result:</h3>
-            <p>Customers leave your listing to check competitors who: ✔ Show services, ✔ Show products, ✔ Show pricing.</p>
-            
+            {s3_text}
+            <p><strong>Result:</strong> Customers leave your listing to check competitors who clearly show Services, Products, and Pricing.</p>
             <div class="impact-row">
                 💸 Revenue Impact: You lose ready-to-buy customers due to lack of clarity.
             </div>
@@ -239,20 +270,10 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <div class="card">
             <div class="card-header">
                 <span>4️⃣ WEAK REVIEW STRATEGY → TRUST LOSS</span>
-                {s4}
+                {s4_badge}
             </div>
-            <p class="problem-row">❌ Problem: Although reviews exist, they are not being monetized.</p>
-            
-            <h3>Issues:</h3>
-            <ul class="cause-list">
-                <li>No keyword-rich reviews</li>
-                <li>No owner replies (or generic replies)</li>
-                <li>No review growth system</li>
-            </ul>
-            
-            <h3>What happens:</h3>
-            <p>Google trusts active businesses more. Customers trust engaged businesses more.</p>
-            
+            {s4_text}
+            <p><strong>What happens:</strong> Google trusts active businesses more. Customers trust engaged businesses more.</p>
             <div class="impact-row">
                 💸 Revenue Impact: A 0.2–0.5 star difference can reduce conversions by 15–25%.
             </div>
@@ -262,13 +283,10 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <div class="card">
             <div class="card-header">
                 <span>5️⃣ ZERO POSTS / OFFERS → DEAD LISTING</span>
-                {s5}
+                {s5_badge}
             </div>
-            <p class="problem-row">❌ Problem: No regular Google Posts.</p>
-            
+            {s5_text}
             <p><strong>What Google sees:</strong> “This business is not actively managed.”</p>
-            <p><strong>What customers see:</strong> “Maybe this shop is closed or not serious.”</p>
-            
             <div class="impact-row">
                 💸 Revenue Impact: You lose customers to competitors who show Offers, New Stock, and Activity.
             </div>
@@ -278,13 +296,10 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <div class="card">
             <div class="card-header">
                 <span>6️⃣ POOR VISUAL AUTHORITY → LOW FOOTFALL</span>
-                {s6}
+                {s6_badge}
             </div>
-            <p class="problem-row">❌ Problem: Insufficient photos.</p>
-            <p>Missing: Product showcase, Interior/exterior clarity, Team/Real-world proof.</p>
-            
+            {s6_text}
             <p><strong>Buyer behavior:</strong> Customers judge before visiting.</p>
-            
             <div class="impact-row">
                 💸 Revenue Impact: Fewer direction clicks → fewer walk-ins → direct sales loss.
             </div>
@@ -294,10 +309,9 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <div class="card">
             <div class="card-header">
                 <span>7️⃣ & 8️⃣ REPUTATION & ALGORITHM SIGNALS</span>
-                {s7}
+                {s7_badge}
             </div>
-            <p class="problem-row">❌ Problem: Uncontrolled Q&A and Low Behavior Signals.</p>
-            <p>Google measures calls, clicks, and dwell time. Your listing is not engineered to force interaction.</p>
+            <p class="problem-row">❌ ANALYSIS: Uncontrolled Q&A and Low Behavior Signals.</p>
             <div class="impact-row">
                  💸 Revenue Impact: One unanswered negative question can kill multiple sales.
             </div>
@@ -362,7 +376,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         </div>
         
         <div style="text-align: center; margin-top: 40px; color: #888; font-size: 9pt;">
-            Generated by Kaydiem Script Lab MLAR v2.0
+            Generated by Revenue Leakage Audit System v2.1
         </div>
 
     </body>

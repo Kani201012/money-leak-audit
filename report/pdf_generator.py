@@ -2,14 +2,11 @@ from weasyprint import HTML
 
 def create_audit_pdf(business_name, audit_result, roi_result, currency):
     """
-    MODULE 5: AUDIT REPORT GENERATOR (HIGH-TICKET SALES EDITION)
-    100% Text Compliance + Agency-Grade Aesthetic.
+    MODULE 5: AUDIT REPORT GENERATOR (HIGH-TICKET SALES EDITION + FONT FIX)
+    100% Text Compliance + Agency-Grade Aesthetic + Linux Font Support.
     """
     
     # --- HELPER: DETECT FAILURES ---
-    # We analyze the audit issues to determine which of the 8 sections are "FAIL"
-    # If the audit found an issue related to the keywords, we mark it CRITICAL FAIL.
-    
     issues_str = " ".join([str(i) for i in audit_result['issues']]).lower()
     
     def get_badge(keywords):
@@ -25,10 +22,11 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
     s4 = get_badge(["review", "reply", "trust"])
     s5 = get_badge(["post", "offer", "active"])
     s6 = get_badge(["photo", "visual"])
-    s7 = "<span class='badge badge-warn'>⚠️ RISK DETECTED</span>" # Q&A is hard to verify, assume risk
-    s8 = "<span class='badge badge-fail'>❌ LOW SIGNAL</span>" # Default to low signal for sales pressure
+    s7 = "<span class='badge badge-warn'>⚠️ RISK DETECTED</span>"
+    s8 = "<span class='badge badge-fail'>❌ LOW SIGNAL</span>"
 
     # --- HTML & CSS CONSTRUCTION ---
+    # FIXED: Changed font-family to 'DejaVu Sans' to stop the "Square Box" error on servers.
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -37,7 +35,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <style>
             @page {{ size: A4; margin: 15mm; }}
             body {{ 
-                font-family: 'Helvetica', 'Arial', sans-serif; 
+                font-family: 'DejaVu Sans', sans-serif; 
                 color: #222; 
                 line-height: 1.5; 
                 font-size: 10pt;
@@ -49,7 +47,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
             h3 {{ font-size: 11pt; color: #000; font-weight: bold; margin: 10px 0 5px 0; }}
             p, li {{ margin-bottom: 5px; }}
             
-            /* HEADER HEADER */
+            /* HEADER */
             .cover-header {{ 
                 background-color: #111; 
                 color: #fff; 
@@ -86,7 +84,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
                 padding: 15px;
                 margin-bottom: 15px;
                 border-radius: 5px;
-                page-break-inside: avoid; /* Don't cut cards in half */
+                page-break-inside: avoid;
                 box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
             }}
             .card-header {{
@@ -95,10 +93,10 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
                 font-weight: bold;
                 font-size: 11pt;
                 border-bottom: 1px solid #ddd;
-                display: flex; /* WeasyPrint supports flex loosely */
+                display: flex;
+                justify-content: space-between;
             }}
             .badge {{
-                float: right;
                 font-size: 8pt;
                 padding: 2px 6px;
                 border-radius: 4px;
@@ -174,7 +172,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <!-- POINT 1 -->
         <div class="card">
             <div class="card-header">
-                1️⃣ LOST VISIBILITY → LOST CUSTOMERS
+                <span>1️⃣ LOST VISIBILITY → LOST CUSTOMERS</span>
                 {s1}
             </div>
             <p class="problem-row">❌ Problem: Your business does not fully appear for high-intent searches.</p>
@@ -198,7 +196,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <!-- POINT 2 -->
         <div class="card">
             <div class="card-header">
-                2️⃣ LOW CLICK-THROUGH RATE (CTR)
+                <span>2️⃣ LOW CLICK-THROUGH RATE (CTR)</span>
                 {s2}
             </div>
             <p class="problem-row">❌ Problem: When customers see your listing, many do not click.</p>
@@ -221,7 +219,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <!-- POINT 3 -->
         <div class="card">
             <div class="card-header">
-                3️⃣ BUYER CONFUSION (PRODUCTS/SERVICES)
+                <span>3️⃣ BUYER CONFUSION (PRODUCTS/SERVICES)</span>
                 {s3}
             </div>
             <p class="problem-row">❌ Problem: Customers cannot clearly see what exactly you sell.</p>
@@ -240,7 +238,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <!-- POINT 4 -->
         <div class="card">
             <div class="card-header">
-                4️⃣ WEAK REVIEW STRATEGY → TRUST LOSS
+                <span>4️⃣ WEAK REVIEW STRATEGY → TRUST LOSS</span>
                 {s4}
             </div>
             <p class="problem-row">❌ Problem: Although reviews exist, they are not being monetized.</p>
@@ -263,7 +261,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <!-- POINT 5 -->
         <div class="card">
             <div class="card-header">
-                5️⃣ ZERO POSTS / OFFERS → DEAD LISTING
+                <span>5️⃣ ZERO POSTS / OFFERS → DEAD LISTING</span>
                 {s5}
             </div>
             <p class="problem-row">❌ Problem: No regular Google Posts.</p>
@@ -279,7 +277,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <!-- POINT 6 -->
         <div class="card">
             <div class="card-header">
-                6️⃣ POOR VISUAL AUTHORITY → LOW FOOTFALL
+                <span>6️⃣ POOR VISUAL AUTHORITY → LOW FOOTFALL</span>
                 {s6}
             </div>
             <p class="problem-row">❌ Problem: Insufficient photos.</p>
@@ -295,7 +293,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency):
         <!-- POINT 7 & 8 Condensed -->
         <div class="card">
             <div class="card-header">
-                7️⃣ & 8️⃣ REPUTATION & ALGORITHM SIGNALS
+                <span>7️⃣ & 8️⃣ REPUTATION & ALGORITHM SIGNALS</span>
                 {s7}
             </div>
             <p class="problem-row">❌ Problem: Uncontrolled Q&A and Low Behavior Signals.</p>

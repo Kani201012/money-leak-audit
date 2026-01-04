@@ -43,33 +43,52 @@ def get_currency_symbol(location_text):
     # Default
     return "$"
 
-# --- CSS INJECTION (THE "MISSION CONTROL" LOOK) ---
+# --- CSS INJECTION (UI FIXES) ---
 st.markdown("""
 <style>
-    /* Main Background */
-    .stApp { background-color: #f8f9fa; font-family: 'Inter', sans-serif; }
+    /* 1. CONTAINER FIX: Prevents stretching on wide monitors */
+    .block-container { 
+        max_width: 1000px; 
+        padding-top: 2rem; 
+        padding-bottom: 5rem; 
+        margin: auto; 
+    }
     
-    /* Hide Default Elements */
+    /* 2. BACKGROUND & FONTS */
+    .stApp { background-color: #f4f6f9; font-family: 'Inter', sans-serif; }
+    h1, h2, h3 { color: #2c3e50; font-weight: 700; }
+    
+    /* 3. PRO CARD DESIGN */
+    .pro-card {
+        background: white;
+        border-radius: 10px;
+        padding: 15px 20px;
+        margin-bottom: 10px;
+        border-left: 5px solid #4F46E5; /* Brand Stripe */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    .pro-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    
+    .card-title { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0; }
+    .card-meta { font-size: 0.85rem; color: #6B7280; display: flex; align-items: center; gap: 15px; margin-top: 5px; }
+    .card-badge { 
+        background: #FEF2F2; 
+        color: #DC2626; 
+        padding: 2px 8px; 
+        border-radius: 4px; 
+        font-size: 0.75rem; 
+        font-weight: 700; 
+        border: 1px solid #FECACA;
+    }
+
+    /* 4. BUTTON STYLING */
+    .stButton>button { border-radius: 6px; font-weight: 600; border: 1px solid #E5E7EB; }
+    
+    /* HIDE DEFAULT STREAMLIT ELEMENTS */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    
-    /* Navigation Bar */
-    .nav-container { background: white; padding: 1rem; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    
-    /* Card Styling */
-    .metric-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; border: 1px solid #eee; }
-    .lead-card { background: white; padding: 15px; border-radius: 10px; border-left: 5px solid #4F46E5; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    
-    /* Typography */
-    h1 { color: #111827; font-weight: 800; letter-spacing: -0.5px; }
-    h2, h3 { color: #374151; }
-    
-    /* Buttons */
-    .stButton>button { border-radius: 8px; font-weight: 600; }
-    
-    /* Dark Mode Text Area for Emails */
-    .stTextArea textarea { background-color: #111827; color: #00ff41; font-family: 'Courier New', monospace; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -82,250 +101,212 @@ selected = option_menu(
     default_index=1,
     orientation="horizontal",
     styles={
-        "container": {"padding": "0!important", "background-color": "#ffffff", "border-radius": "10px"},
-        "icon": {"color": "orange", "font-size": "18px"}, 
-        "nav-link": {"font-size": "14px", "text-align": "center", "margin": "0px", "--hover-color": "#eee"},
+        "container": {"padding": "0!important", "background-color": "transparent"},
+        "nav-link": {"font-size": "14px", "text-align": "center", "margin": "0 5px", "--hover-color": "#eee"},
         "nav-link-selected": {"background-color": "#4F46E5", "color": "white"},
     }
 )
 
 # --- VIEW 1: HOME ---
 if selected == "Home":
-    st.markdown("<h1 style='text-align: center; margin-top: 50px;'>Discover High-Value Opportunities</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #666;'>Crawl regional markets and harvest leads with significant competitive gaps.</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; margin-top: 40px;'>Local Intel Engine</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #666; max-width: 600px; margin: auto;'>Identify high-value local businesses with critical revenue leaks.</p>", unsafe_allow_html=True)
     
-    c1, c2, c3 = st.columns([1,2,1])
+    st.write("")
+    c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
-        st.image("https://cdn-icons-png.flaticon.com/512/3094/3094851.png", width=100) # Placeholder logo
+        st.info("👈 Select 'Prospector' to start hunting.")
 
 # --- VIEW 2: PROSPECTOR ---
 if selected == "Prospector":
-    st.title("🌐 Local Intel Engine")
     
     # 1. SEARCH INPUTS
-    c1, c2, c3 = st.columns([2, 1, 1])
-    with c1:
-        keyword = st.text_input("Industry", placeholder="e.g. Dentists, HVAC")
-    with c2:
-        location = st.text_input("Region", placeholder="City, State")
-    with c3:
-        st.write("")
-        st.write("")
-        run_btn = st.button("🚀 DEPLOY INTEL SCAN", use_container_width=True)
+    with st.container():
+        c1, c2, c3 = st.columns([2, 1, 1])
+        with c1:
+            keyword = st.text_input("Industry", placeholder="e.g. Emergency Plumber")
+        with c2:
+            location = st.text_input("Region", placeholder="e.g. Los Angeles")
+        with c3:
+            st.write("") # Spacer
+            st.write("") # Spacer
+            run_btn = st.button("🚀 DEPLOY SCAN", use_container_width=True)
 
-    # 2. INITIALIZE SESSION STATE (MEMORY)
+    # 2. SESSION STATE INIT
     if 'scan_results' not in st.session_state:
         st.session_state['scan_results'] = []
 
-    # 3. HANDLE SEARCH BUTTON CLICK
+    # 3. RUN LOGIC
     if run_btn and keyword and location:
-        with st.spinner("Harvesting Market Data..."):
-            # Fetch Data
+        with st.spinner("Scanning Market Data..."):
             raw_leads = find_leads(keyword, location)
             
             if not raw_leads:
-                st.warning("No leads found. Check API Key or try a larger city.")
+                st.warning("No leads found matching criteria. Try a broader area.")
             else:
-                # Inject Location for Currency Memory
                 for lead in raw_leads:
-                    lead['search_location'] = location 
+                    lead['search_location'] = location # Save for currency logic
                 
-                # Save to Session State (RAM)
                 st.session_state['scan_results'] = raw_leads
-                
-                # Save to History File (Disk)
                 save_scan(keyword, location, raw_leads)
-                st.toast(f"Intel Acquired: {len(raw_leads)} Targets Found", icon="✅")
+                st.toast(f"Acquired {len(raw_leads)} Targets", icon="✅")
 
-    # 4. DISPLAY RESULTS (PERSISTENT LOOP)
+    # 4. DISPLAY RESULTS (NEW COMPACT UI)
     results = st.session_state['scan_results']
     
     if results:
-        # Option to clear results
         if st.button("Clear Results", key="clear_res"):
             st.session_state['scan_results'] = []
             st.experimental_rerun()
             
         for lead in results:
-            # Detect Currency
+            # Currency Logic
             loc = lead.get('search_location', location) 
             currency_symbol = get_currency_symbol(loc)
 
-            # Normalize & Audit
+            # Audit Logic
             data = normalize_gbp_data(lead)
             audit = calculate_rli_score(data)
             roi = calculate_money_loss(audit['rli_score'], 500, 50) 
             
-            # --- LEAD CARD (RICH UI) ---
+            # --- PROFESSIONAL CARD UI ---
             with st.container():
-                # HTML Card
-                st.markdown(f"""
-                <div class="lead-card">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <h3 style="margin:0;">{data['name']}</h3>
-                            <p style="margin:5px 0 0 0; color:#666;">📍 {data['address']}</p>
+                c_info, c_actions = st.columns([3, 2])
+                
+                with c_info:
+                    # HTML Structure for Card Information
+                    st.markdown(f"""
+                    <div class="pro-card">
+                        <div class="card-title">{data['name']}</div>
+                        <div class="card-meta">
+                            <span>⭐ {data['rating']} ({data['reviews']})</span>
+                            <span>📍 {data['address'][:35]}...</span>
                         </div>
-                        <div style="text-align:right;">
-                            <div style="font-size:1.2em; font-weight:bold;">⭐ {data['rating']}</div>
-                            <div style="font-size:0.8em; color:#888;">({data['reviews']} revs)</div>
+                        <div class="card-meta">
+                            <span class="card-badge">GAP: {currency_symbol}{roi['monthly_loss_min']:,}/mo</span>
+                            <span>📞 {lead.get('phone', 'N/A')}</span>
                         </div>
                     </div>
-                    <hr style="margin:10px 0; border:0; border-top:1px solid #eee;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="color: #D32F2F; font-weight: bold; background:#fff0f0; padding:4px 8px; border-radius:4px;">
-                            GAP: {currency_symbol}{roi['monthly_loss_min']:,}/mo
-                        </span>
-                        <span style="color: #444; font-size:0.9em;">
-                            📞 {lead.get('phone', 'N/A')}
-                        </span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
                 
-                # ACTION TOOLBAR
-                c1, c2, c3, c4 = st.columns([1, 1, 1, 1])
-                
-                with c1:
-                    if lead.get('maps_url'):
-                        st.link_button("📍 View Map", lead['maps_url'], use_container_width=True)
-                    else:
-                        st.button("📍 No Map", disabled=True, use_container_width=True, key=f"nomap_{lead['place_id']}")
-                
-                with c2:
-                    if lead.get('website'):
-                        st.link_button("🌐 Website", lead['website'], use_container_width=True)
-                    else:
-                        st.button("🚫 No Site", disabled=True, use_container_width=True, key=f"noweb_{lead['place_id']}")
-                        
-                with c3:
-                    if st.button(f"📥 Track", key=f"add_{lead['place_id']}", use_container_width=True):
-                        lead['audit_score'] = audit['rli_score']
-                        lead['monthly_gap'] = roi['monthly_loss_min']
-                        lead['currency'] = currency_symbol
-                        if add_lead(lead):
-                            st.toast("Target Acquired!", icon="✅")
+                with c_actions:
+                    # ACTION BUTTONS GRID
+                    st.write("") # Top alignment spacer
+                    b1, b2 = st.columns(2)
+                    b3, b4 = st.columns(2)
+                    
+                    with b1:
+                        if lead.get('maps_url'):
+                            st.link_button("📍 Map", lead['maps_url'], use_container_width=True)
                         else:
-                            st.toast("Already Tracking", icon="⚠️")
+                            st.button("No Map", disabled=True, key=f"nm_{lead['place_id']}", use_container_width=True)
+                    
+                    with b2:
+                        if lead.get('website'):
+                            st.link_button("🌐 Web", lead['website'], use_container_width=True)
+                        else:
+                            st.button("No Web", disabled=True, key=f"nw_{lead['place_id']}", use_container_width=True)
                             
-                with c4:
-                    pdf = create_audit_pdf(data['name'], audit, roi, currency_symbol, data)
-                    st.download_button("📄 Report", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"dl_{lead['place_id']}", use_container_width=True)
+                    with b3:
+                        if st.button("📥 Track", key=f"add_{lead['place_id']}", use_container_width=True):
+                            lead['audit_score'] = audit['rli_score']
+                            lead['monthly_gap'] = roi['monthly_loss_min']
+                            lead['currency'] = currency_symbol
+                            if add_lead(lead):
+                                st.toast("Added to Pipeline", icon="✅")
+                            else:
+                                st.toast("Already Tracking", icon="⚠️")
+                                
+                    with b4:
+                        pdf = create_audit_pdf(data['name'], audit, roi, currency_symbol, data)
+                        st.download_button("📄 PDF", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"dl_{lead['place_id']}", use_container_width=True)
 
-    # 5. SHOW HISTORY
+    # 5. HISTORY
     st.divider()
-    with st.expander("📂 Scan History (Market Archive)"):
+    with st.expander("📂 Scan History"):
         history = load_history()
-        if not history:
-            st.write("No previous scans found.")
-        else:
+        if history:
             for scan in history:
-                col_h1, col_h2 = st.columns([4, 1])
-                with col_h1:
-                    st.write(f"**{scan['keyword']}** in {scan['location']} ({scan['count']} leads) - {scan['timestamp']}")
-                with col_h2:
+                c_h1, c_h2 = st.columns([4, 1])
+                with c_h1:
+                    st.write(f"**{scan['keyword']}** - {scan['location']} ({scan['count']} leads) [{scan['timestamp']}]")
+                with c_h2:
                     if st.button("Load", key=f"load_{scan['timestamp']}"):
                         st.session_state['scan_results'] = scan['leads']
                         st.experimental_rerun()
 
-# --- VIEW 3: PIPELINE (CRM) ---
+# --- VIEW 3: PIPELINE ---
 if selected == "Pipeline":
     val, count = get_metrics()
     
-    # Dashboard Header
-    st.markdown("## Mission Control")
+    st.subheader("Mission Control")
     m1, m2, m3 = st.columns(3)
-    m1.metric("Active Targets", count)
-    m2.metric("Pipeline Potential", f"${val:,.0f}") 
-    m3.metric("Deployment Phase", "Active")
+    m1.metric("Targets", count)
+    m2.metric("Pipeline Value", f"${val:,.0f}")
+    m3.metric("Status", "Active")
     
     st.divider()
     
-    # Load Data
     db = load_db()
     if not db:
-        st.info("Pipeline is empty. Go to Prospector to add targets.")
+        st.info("Pipeline is empty.")
     else:
         for lead in db:
-            currency_symbol = lead.get('currency', "$")
+            sym = lead.get('currency', "$")
             
-            with st.expander(f"{lead['business_name']} | Gap: {currency_symbol}{lead.get('monthly_gap', 0):,}", expanded=False):
+            with st.expander(f"{lead['business_name']} | Gap: {sym}{lead.get('monthly_gap', 0):,}"):
                 
-                # ACTION BAR IN PIPELINE
+                # Action Bar inside Pipeline
                 c_map, c_web, c_regen = st.columns([1, 1, 2])
                 with c_map:
-                    if lead.get('maps_url'): st.link_button("📍 View Map", lead['maps_url'])
+                    if lead.get('maps_url'): st.link_button("📍 Map", lead['maps_url'])
                 with c_web:
-                    if lead.get('website'): st.link_button("🌐 Visit Website", lead['website'])
+                    if lead.get('website'): st.link_button("🌐 Web", lead['website'])
                 with c_regen:
-                    # Regenerate Report Logic
-                    if st.button("📄 Regenerate Report", key=f"regen_{lead['place_id']}"):
+                    if st.button("📄 Regenerate PDF", key=f"re_{lead['place_id']}"):
                         data = normalize_gbp_data(lead)
                         audit = calculate_rli_score(data)
                         roi = calculate_money_loss(audit['rli_score'], 500, 50)
-                        pdf = create_audit_pdf(data['name'], audit, roi, currency_symbol, data)
-                        st.download_button("Download Now", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"re_dl_{lead['place_id']}")
-                
-                st.divider()
+                        pdf = create_audit_pdf(data['name'], audit, roi, sym, data)
+                        st.download_button("Download Now", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"redl_{lead['place_id']}")
 
-                # STATUS & ACTIONS
-                p1, p2, p3 = st.columns([2,1,1])
-                with p1:
-                    st.caption("Status")
-                    current_status = lead.get('status', "New Lead")
+                st.divider()
+                
+                # CRM Controls
+                c1, c2 = st.columns([1, 2])
+                with c1:
+                    st.caption("Stage")
                     options = ["New Lead", "Outreach Sent", "Negotiation", "Closed Won", "Lost"]
-                    try:
-                        idx = options.index(current_status)
-                    except ValueError:
-                        idx = 0
-                        
-                    new_status = st.selectbox("Current Phase", 
-                                            options, 
-                                            index=idx,
-                                            key=f"status_{lead['place_id']}",
-                                            label_visibility="collapsed")
+                    curr_idx = options.index(lead.get('status', "New Lead")) if lead.get('status') in options else 0
+                    new_st = st.selectbox("Status", options, index=curr_idx, key=f"st_{lead['place_id']}", label_visibility="collapsed")
                     
-                    if new_status != current_status:
-                        update_lead_status(lead['place_id'], new_status)
+                    if new_st != lead.get('status'):
+                        update_lead_status(lead['place_id'], new_st)
                         st.experimental_rerun()
                         
-                with p2:
-                    st.caption("Win Prob.")
-                    st.markdown(f"**{lead.get('win_probability', 'Medium')}**")
-                with p3:
-                    if st.button("🗑️", key=f"del_{lead['place_id']}"):
+                    if st.button("🗑️ Delete Lead", key=f"del_{lead['place_id']}"):
                         delete_lead(lead['place_id'])
                         st.experimental_rerun()
+                        
+                with c2:
+                    t1, t2 = st.tabs(["✉️ Email Generator", "📝 Notes"])
+                    with t1:
+                        kind = st.radio("Template", ["Initial", "Follow Up", "Breakup"], horizontal=True, key=f"r_{lead['place_id']}")
+                        s, b = generate_cold_email(lead, f"T1 ({kind})") # Mapping simplified for demo
+                        st.text_input("Subject", s, key=f"s_{lead['place_id']}")
+                        st.text_area("Body", b, height=150, key=f"b_{lead['place_id']}")
+                    with t2:
+                        st.text_area("Notes", lead.get('notes', ''), key=f"n_{lead['place_id']}")
 
-                # EMAIL & CHECKLIST
-                tab1, tab2 = st.tabs(["📧 Sales Sequence", "✅ Mission Objectives"])
-                
-                with tab1:
-                    # Email Generator
-                    email_type = st.radio("Select Template", ["T1 (Initial)", "T2 (Follow Up)", "T3 (Breakup)"], horizontal=True, key=f"rad_{lead['place_id']}")
-                    subj, body = generate_cold_email(lead, email_type)
-                    
-                    st.text_input("Subject", value=subj, key=f"subj_{lead['place_id']}")
-                    st.text_area("Email Body", value=body, height=250, key=f"body_{lead['place_id']}")
-                    
-                with tab2:
-                    st.checkbox("Verify Business Ownership", key=f"c1_{lead['place_id']}")
-                    st.checkbox("Draft Personalized Gap Report", key=f"c2_{lead['place_id']}")
-                    st.checkbox("Initial Outreach Call", key=f"c3_{lead['place_id']}")
-                    st.checkbox("Technical Audit Presentation", key=f"c4_{lead['place_id']}")
-
-# --- VIEW 4: MISSION CONTROL ---
+# --- VIEW 4: ANALYTICS ---
 if selected == "Mission Control":
-    st.markdown("## Deployment Registry")
+    st.subheader("Registry")
     db = load_db()
     if db:
         df = pd.DataFrame(db)
         st.dataframe(
             df[['business_name', 'status', 'rating', 'monthly_gap']], 
-            use_container_width=True,
-            column_config={
-                "monthly_gap": st.column_config.NumberColumn("Revenue Gap", format="$%d")
-            }
+            use_container_width=True
         )
     else:
         st.info("No data available.")

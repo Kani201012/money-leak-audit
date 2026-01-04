@@ -1,54 +1,58 @@
-import time
-import random
+import requests
+import streamlit as st
 
 def find_leads(keyword, location):
     """
-    MODULE 1: PROSPECTOR (LEAD FINDER)
-    Simulates finding businesses based on specific "Weakness Filters".
-    In production, this connects to SerpAPI/Outscraper.
+    MODULE 1: PROSPECTOR (REAL DATA EDITION)
+    Connects to SerpAPI to fetch LIVE Google Maps data.
     """
-    time.sleep(1) # Network simulation
     
-    # We generate a mix of "High Leak" and "Low Leak" businesses to test the system
-    leads = [
-        {
-            "business_name": f"{keyword} Pro Services",
-            "place_id": "PID_001",
-            "rating": 4.9,
-            "reviews": 150,
-            "categories": [keyword],
-            "phone": "+1 555-0101",
-            "address": f"100 Main St, {location}",
-            "website": "https://example.com",
-            "photos_count": 45,
-            "posts_active": True,
-            "owner_response_rate": 0.9
-        },
-        {
-            "business_name": f"{location} {keyword} Depot",
-            "place_id": "PID_002",
-            "rating": 3.6, # LEAK: Low Rating
-            "reviews": 14, # LEAK: Low Trust
-            "categories": [keyword],
-            "phone": "+1 555-0202",
-            "address": f"200 Side St, {location}",
-            "website": None, # LEAK: No Website
-            "photos_count": 3, # LEAK: Visual Void
-            "posts_active": False, # LEAK: Dead Listing
-            "owner_response_rate": 0.0
-        },
-        {
-            "business_name": f"Bob's {keyword}",
-            "place_id": "PID_003",
-            "rating": 4.1,
-            "reviews": 35, # LEAK: Low Trust
-            "categories": [keyword],
-            "phone": "+1 555-0303",
-            "address": f"300 Broad Ave, {location}",
-            "website": "https://bobs-site.com",
-            "photos_count": 8, # LEAK: Low Photos
-            "posts_active": False, # LEAK: No Posts
-            "owner_response_rate": 0.2
-        }
-    ]
-    return leads
+    # 1. CHECK FOR API KEY
+    # We look for the key in Streamlit secrets, or you can hardcode it for testing (not recommended for sharing)
+    api_key = st.secrets.get("SERPAPI_KEY")
+    
+    if not api_key:
+        # FALLBACK: If no key is found, show an error (or return mock data if you prefer)
+        st.error("⚠️ No SerpAPI Key found! Please add it to Streamlit Secrets.")
+        return []
+
+    # 2. PREPARE THE SEARCH
+    params = {
+        "engine": "google_maps",
+        "q": f"{keyword} in {location}",
+        "api_key": api_key,
+        "type": "search",
+        "ll": "@40.7455096,-74.0083012,14z" # Optional: centers search, usually auto-detected by location text
+    }
+
+    try:
+        # 3. CALL THE API
+        search = requests.get("https://serpapi.com/search", params=params)
+        results = search.json()
+        
+        # 4. PARSE REAL RESULTS
+        local_results = results.get("local_results", [])
+        
+        cleaned_leads = []
+        
+        for result in local_results:
+            # Extract real data points
+            cleaned_leads.append({
+                "business_name": result.get("title"),
+                "place_id": result.get("place_id"),
+                "rating": result.get("rating", 0),
+                "reviews": result.get("reviews", 0),
+                "categories": [result.get("type", "Business")],
+                "phone": result.get("phone", "N/A"),
+                "address": result.get("address", "Unknown"),
+                "website": result.get("website"),
+                "photos_count": result.get("photos_link", {}).get("count", 0) if "photos_link" in result else 5, # API often doesn't give exact count, we estimate or default
+                "posts_active": False, # SerpAPI doesn't always show posts status, assuming False for strict audit
+                "owner_response_rate": 0.5 # Placeholder as API doesn't provide this deep metric easily
+            })
+            
+        return cleaned_leads
+
+    except Exception as e:
+        st.error(f"API Error: {e}")
+        return []

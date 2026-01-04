@@ -10,6 +10,7 @@ from audit.roi_calculator import calculate_money_loss
 from report.pdf_generator import create_audit_pdf
 from modules.pipeline_manager import add_lead, load_db, update_lead_status, delete_lead, get_metrics
 from modules.outreach import generate_cold_email
+from modules.scan_history import save_scan, load_history  # <--- NEW IMPORT
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Growth OS Terminal", layout="wide", initial_sidebar_state="collapsed")
@@ -50,7 +51,7 @@ selected = option_menu(
     options=["Home", "Prospector", "Pipeline", "Mission Control"],
     icons=["house", "search", "kanban", "bullseye"],
     menu_icon="cast",
-    default_index=0,
+    default_index=1, # Defaulting to Prospector for workflow speed
     orientation="horizontal",
     styles={
         "container": {"padding": "0!important", "background-color": "#ffffff", "border-radius": "10px"},
@@ -69,10 +70,11 @@ if selected == "Home":
     with c2:
         st.image("https://cdn-icons-png.flaticon.com/512/3094/3094851.png", width=100) # Placeholder logo
 
-# --- VIEW 2: PROSPECTOR ---
+# --- VIEW 2: PROSPECTOR (FIXED PERSISTENCE) ---
 if selected == "Prospector":
     st.title("🌐 Local Intel Engine")
     
+    # 1. SEARCH INPUTS
     c1, c2, c3 = st.columns([2, 1, 1])
     with c1:
         keyword = st.text_input("Industry", placeholder="e.g. Dentists, HVAC")
@@ -83,45 +85,81 @@ if selected == "Prospector":
         st.write("")
         run_btn = st.button("🚀 DEPLOY INTEL SCAN", use_container_width=True)
 
+    # 2. INITIALIZE SESSION STATE (MEMORY)
+    if 'scan_results' not in st.session_state:
+        st.session_state['scan_results'] = []
+
+    # 3. HANDLE SEARCH BUTTON CLICK
     if run_btn and keyword and location:
         with st.spinner("Harvesting Market Data..."):
+            # Fetch Data
             raw_leads = find_leads(keyword, location)
             
             if not raw_leads:
                 st.warning("No leads found. Check API Key or try a larger city.")
             else:
-                st.success(f"Intel Acquired: {len(raw_leads)} Targets Found")
+                # Save to Session State (RAM)
+                st.session_state['scan_results'] = raw_leads
                 
-                for lead in raw_leads:
-                    # Normalize & Audit
-                    data = normalize_gbp_data(lead)
-                    audit = calculate_rli_score(data)
-                    roi = calculate_money_loss(audit['rli_score'], 500, 50) # Assuming avg sale $500
-                    
-                    # Display Lead Card
-                    with st.container():
-                        st.markdown(f"""
-                        <div class="lead-card">
-                            <h3>{data['name']}</h3>
-                            <p>📍 {data['address']} | ⭐ {data['rating']} ({data['reviews']})</p>
-                            <p style="color: #D32F2F; font-weight: bold;">MONTHLY GAP: ${roi['monthly_loss_min']:,}</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        col_a, col_b = st.columns(2)
-                        with col_a:
-                            # Save to Pipeline Button
-                            if st.button(f"📥 Add to Pipeline", key=f"add_{lead['place_id']}"):
-                                lead['audit_score'] = audit['rli_score']
-                                lead['monthly_gap'] = roi['monthly_loss_min']
-                                if add_lead(lead):
-                                    st.toast(f"Target {data['name']} Acquired!", icon="✅")
-                                else:
-                                    st.toast("Target already in pipeline.", icon="⚠️")
-                        with col_b:
-                            # Instant Report
-                            pdf = create_audit_pdf(data['name'], audit, roi, "$")
-                            st.download_button("📄 Download Audit", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"dl_{lead['place_id']}")
+                # Save to History File (Disk)
+                save_scan(keyword, location, raw_leads)
+                st.toast(f"Intel Acquired: {len(raw_leads)} Targets Found", icon="✅")
+
+    # 4. DISPLAY RESULTS (PERSISTENT LOOP)
+    results = st.session_state['scan_results']
+    
+    if results:
+        # Option to clear results
+        if st.button("Clear Results", key="clear_res"):
+            st.session_state['scan_results'] = []
+            st.experimental_rerun()
+            
+        for lead in results:
+            # Normalize & Audit Logic
+            data = normalize_gbp_data(lead)
+            audit = calculate_rli_score(data)
+            roi = calculate_money_loss(audit['rli_score'], 500, 50) # Avg sale $500, 50 calls
+            
+            # Display Lead Card
+            with st.container():
+                st.markdown(f"""
+                <div class="lead-card">
+                    <h3>{data['name']}</h3>
+                    <p>📍 {data['address']} | ⭐ {data['rating']} ({data['reviews']})</p>
+                    <p style="color: #D32F2F; font-weight: bold;">MONTHLY GAP: ${roi['monthly_loss_min']:,}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    # Save to Pipeline Button
+                    if st.button(f"📥 Add to Pipeline", key=f"add_{lead['place_id']}"):
+                        lead['audit_score'] = audit['rli_score']
+                        lead['monthly_gap'] = roi['monthly_loss_min']
+                        if add_lead(lead):
+                            st.toast(f"Target {data['name']} Acquired!", icon="✅")
+                        else:
+                            st.toast("Target already in pipeline.", icon="⚠️")
+                with col_b:
+                    # Instant Report Generation
+                    pdf = create_audit_pdf(data['name'], audit, roi, "$")
+                    st.download_button("📄 Download Audit", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"dl_{lead['place_id']}")
+
+    # 5. SHOW HISTORY ARCHIVE
+    st.divider()
+    with st.expander("📂 Scan History (Market Archive)"):
+        history = load_history()
+        if not history:
+            st.write("No previous scans found.")
+        else:
+            for scan in history:
+                col_h1, col_h2 = st.columns([4, 1])
+                with col_h1:
+                    st.write(f"**{scan['keyword']}** in {scan['location']} ({scan['count']} leads) - {scan['timestamp']}")
+                with col_h2:
+                    if st.button("Load", key=f"load_{scan['timestamp']}"):
+                        st.session_state['scan_results'] = scan['leads']
+                        st.experimental_rerun()
 
 # --- VIEW 3: PIPELINE (CRM) ---
 if selected == "Pipeline":
@@ -149,13 +187,21 @@ if selected == "Pipeline":
                 p1, p2, p3 = st.columns([2,1,1])
                 with p1:
                     st.caption("Status")
+                    current_status = lead.get('status', "New Lead")
+                    options = ["New Lead", "Outreach Sent", "Negotiation", "Closed Won", "Lost"]
+                    # Safety check for index
+                    try:
+                        idx = options.index(current_status)
+                    except ValueError:
+                        idx = 0
+                        
                     new_status = st.selectbox("Current Phase", 
-                                            ["New Lead", "Outreach Sent", "Negotiation", "Closed Won", "Lost"], 
-                                            index=["New Lead", "Outreach Sent", "Negotiation", "Closed Won", "Lost"].index(lead.get('status', "New Lead")),
+                                            options, 
+                                            index=idx,
                                             key=f"status_{lead['place_id']}",
                                             label_visibility="collapsed")
                     
-                    if new_status != lead.get('status'):
+                    if new_status != current_status:
                         update_lead_status(lead['place_id'], new_status)
                         st.experimental_rerun()
                         

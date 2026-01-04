@@ -142,7 +142,7 @@ if selected == "Prospector":
                             st.toast("Target already in pipeline.", icon="⚠️")
                 with col_b:
                     # Instant Report Generation
-                    pdf = create_audit_pdf(data['name'], audit, roi, "$")
+                    pdf = create_audit_pdf(data['name'], audit, roi, "$", data)
                     st.download_button("📄 Download Audit", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"dl_{lead['place_id']}")
 
     # 5. SHOW HISTORY ARCHIVE

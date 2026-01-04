@@ -1,70 +1,72 @@
 import streamlit as st
-from prospector.maps_scraper import search_google_maps
-from audit.logic import run_money_leak_audit, calculate_roi_impact
-from report.generator import generate_consulting_pdf
+from prospector.maps_scraper import find_leads
+from harvester.gbp_data import normalize_gbp_data
+from audit.leakage_index import calculate_rli_score
+from audit.roi_calculator import calculate_money_loss
+from report.pdf_generator import create_audit_pdf
 
-# --- UI CONFIG ---
-st.set_page_config(page_title="Revenue Leak Audit", layout="wide")
+# --- UI CONFIGURATION ---
+st.set_page_config(page_title="Google Maps Money-Leak Audit", layout="wide")
 
-# --- HEADER ---
 st.title("💸 Google Maps Money-Leak Audit System")
-st.markdown("**Purpose:** Identify exactly where this business is losing customers, calls, and revenue.")
+st.markdown("### Identify exactly where business is losing customers, calls, and revenue.")
 
-# --- SIDEBAR: MONETIZATION SETTINGS ---
+# --- SIDEBAR CONFIG ---
 with st.sidebar:
-    st.header("💰 Audit Calibration")
-    currency = st.selectbox("Currency", ["$", "€", "£", "₹", "SAR"])
-    avg_sale = st.number_input("Avg. Sale Value", value=500)
-    est_leads = st.number_input("Est. Monthly Traffic", value=100)
-    st.divider()
-    st.info("System Ready: V1.0")
+    st.header("⚙️ Audit Parameters")
+    currency = st.selectbox("Currency", ["$", "₹", "€", "£", "SAR"])
+    avg_sale = st.number_input("Average Sale Value", min_value=10, value=500)
+    est_calls = st.number_input("Est. Monthly Call Volume", min_value=10, value=100)
 
-# --- STEP 1: PROSPECTOR ---
-st.subheader("1️⃣ Prospector (Find Weak Businesses)")
-c1, c2 = st.columns(2)
-with c1:
-    keyword = st.text_input("Keyword", "Dentist")
-with c2:
-    location = st.text_input("Location", "Dubai")
+# --- MODULE 1: PROSPECTOR ---
+col1, col2 = st.columns(2)
+with col1:
+    keyword = st.text_input("Business Keyword (e.g. Plumber)")
+with col2:
+    location = st.text_input("Location (e.g. Dammam)")
 
-if st.button("🔍 Run Prospector"):
+if st.button("🚀 Run Prospector & Audit"):
     if keyword and location:
-        with st.spinner("Harvesting Google Maps Data..."):
-            # Call Module 1
-            results = search_google_maps(keyword, location)
-            st.session_state['results'] = results
-            st.success(f"Found {len(results)} Businesses")
+        with st.spinner("Prospecting and Analyzing..."):
+            
+            # 1. FIND LEADS (Module 1)
+            raw_leads = find_leads(keyword, location)
+            
+            st.write(f"Found {len(raw_leads)} potential businesses.")
+            st.divider()
 
-# --- STEP 2: LEAD TABLE ---
-if 'results' in st.session_state:
-    st.divider()
-    st.subheader("2️⃣ Lead Selection")
-    
-    for biz in st.session_state['results']:
-        with st.expander(f"{biz['business_name']} (Rating: {biz['rating']} | Reviews: {biz['reviews']})"):
-            
-            # --- STEP 3: RUN AUDIT ENGINE (HIDDEN LOGIC) ---
-            audit = run_money_leak_audit(biz)
-            roi = calculate_roi_impact(audit['rli_score'], avg_sale, est_leads)
-            
-            # Display Summary
-            col_a, col_b = st.columns(2)
-            with col_a:
-                st.write(f"**RLI Score:** {audit['rli_score']}/100")
-                if audit['rli_score'] > 50:
-                    st.error(f"Status: {audit['leak_level']}")
-                else:
-                    st.warning(f"Status: {audit['leak_level']}")
-            
-            with col_b:
-                st.metric("Est. Monthly Loss", f"{currency}{roi['monthly_loss_min']:,}")
+            for lead in raw_leads:
+                # 2. HARVEST & NORMALIZE (Module 2)
+                clean_data = normalize_gbp_data(lead)
+                
+                # 3. AUDIT ENGINE (Module 3)
+                audit_result = calculate_rli_score(clean_data)
+                
+                # 4. ROI CALCULATOR (Module 4)
+                roi_result = calculate_money_loss(audit_result['rli_score'], avg_sale, est_calls)
 
-            # --- STEP 4: GENERATE REPORT ---
-            pdf_bytes = generate_consulting_pdf(biz, audit, roi, currency)
-            
-            st.download_button(
-                label=f"📄 Download Audit for {biz['business_name']}",
-                data=pdf_bytes,
-                file_name=f"{biz['business_name']}_Money_Leak_Audit.pdf",
-                mime="application/pdf"
-            )
+                # DISPLAY CARD
+                with st.expander(f"{clean_data['name']} (Score: {audit_result['rli_score']}/100)"):
+                    c1, c2, c3 = st.columns([1, 2, 1])
+                    
+                    with c1:
+                        if audit_result['rli_score'] > 50:
+                            st.error(f"RLI: {audit_result['rli_score']}")
+                        else:
+                            st.warning(f"RLI: {audit_result['rli_score']}")
+                            
+                    with c2:
+                        st.write(f"**Status:** {audit_result['leak_level']}")
+                        st.write(f"**Est. Annual Loss:** {currency}{roi_result['annual_loss']:,}")
+                        st.caption(f"Issues: {len(audit_result['issues'])} detected")
+                    
+                    with c3:
+                        # 5. GENERATE PDF (Module 5)
+                        pdf_data = create_audit_pdf(clean_data['name'], audit_result, roi_result, currency)
+                        
+                        st.download_button(
+                            label="📥 Download Audit PDF",
+                            data=pdf_data,
+                            file_name=f"{clean_data['name']}_Audit.pdf",
+                            mime="application/pdf"
+                        )

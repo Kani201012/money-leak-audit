@@ -4,3 +4,4 @@ requests
 weasyprint
 jinja2
 plotly
+streamlit-option-menu

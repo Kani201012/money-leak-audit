@@ -171,6 +171,14 @@ if selected == "Auditor":
                 else:
                     currency_symbol = get_currency_symbol(target_loc)
                     data = normalize_gbp_data(target_lead)
+                    
+                    # --- MANUAL OVERRIDE (THE FIX) ---
+                    # If the scraper missed the website, but YOU typed it in, use yours.
+                    if target_web and not data['has_website']:
+                        data['has_website'] = True
+                        data['website'] = target_web
+                        st.toast("⚠️ Scraper missed website, but your manual input saved it!", icon="🔧")
+                        
                     audit = calculate_rli_score(data)
                     roi = calculate_money_loss(audit['rli_score'], 500, 50)
                     

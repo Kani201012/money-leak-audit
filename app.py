@@ -294,7 +294,7 @@ elif selected == "Prospector":
             st.session_state['scan_results'] = []
             st.experimental_rerun()
             
-        for lead in results:
+         for i, lead in enumerate(results):
             loc = lead.get('search_location', location) 
             currency_symbol = get_currency_symbol(loc)
             data = normalize_gbp_data(lead)
@@ -324,17 +324,17 @@ elif selected == "Prospector":
                     b3, b4 = st.columns(2)
                     with b1:
                         if lead.get('maps_url'): st.link_button("📍 Map", lead['maps_url'], use_container_width=True)
-                        else: st.button("No Map", disabled=True, key=f"nm_{lead['place_id']}", use_container_width=True)
+                        else: st.button("No Map", disabled=True, key=f"nm_{lead['place_id']}_{i}", use_container_width=True)
                     with b2:
                         if lead.get('website'): st.link_button("🌐 Web", lead['website'], use_container_width=True)
-                        else: st.button("No Web", disabled=True, key=f"nw_{lead['place_id']}", use_container_width=True)
+                        else: st.button("No Web", disabled=True, key=f"nw_{lead['place_id']}_{i}", use_container_width=True)
                     with b3:
-                        if st.button("📥 Track", key=f"add_{lead['place_id']}", use_container_width=True):
+                        if st.button("📥 Track", key=f"add_{lead['place_id']}_{i}", use_container_width=True):
                             lead['audit_score'], lead['monthly_gap'], lead['currency'] = audit['rli_score'], roi['monthly_loss_min'], currency_symbol
                             if add_lead(lead): st.toast("Added", icon="✅")
                     with b4:
                         pdf = create_audit_pdf(data['name'], audit, roi, currency_symbol, data)
-                        st.download_button("📄 Report", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"dl_{lead['place_id']}", use_container_width=True)
+                        st.download_button("📄 Report", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"dl_{lead['place_id']}_{i}", use_container_width=True)
 
 # ==========================================
 # 📊 VIEW 3: PIPELINE

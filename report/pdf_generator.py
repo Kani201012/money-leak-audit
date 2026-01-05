@@ -2,22 +2,19 @@ from weasyprint import HTML
 
 def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_data):
     """
-    MODULE 5: AUDIT REPORT GENERATOR (V3.3 - WEBSITE DETECTION FIX)
+    MODULE 5: AUDIT REPORT GENERATOR (V4.0 - CONVERSION PSYCHOLOGY EDITION)
+    Features: High-Converting Copy, 3D Buttons, "The Hook", and Outcome-Based Roadmap.
     """
     
+    # --- 1. DATA PREPARATION ---
     issues_str = " ".join([str(i) for i in audit_result['issues']]).lower()
     
-    # --- DATA EXTRACTION ---
     rev_count = lead_data.get('reviews', 0)
     rating = lead_data.get('rating', 0.0)
-    
     photo_count = lead_data.get('photos', 0)
     if photo_count == 0: photo_count = lead_data.get('photos_count', 0)
-    
-    # CRITICAL FIX: Check both the URL string AND the Boolean flag
     has_website = lead_data.get('website') or lead_data.get('has_website')
     
-    # Benchmarks
     competitor_avg_reviews = 150
     competitor_avg_photos = 45
 
@@ -27,13 +24,13 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
         else:
             return "<span class='badge badge-pass'>✅ PASS</span>", f"<p class='success-row'>✅ ANALYSIS: {success_text}</p>"
 
-    # --- SECTION LOGIC ---
+    # --- 2. LOGIC ---
     
-    # 1. VISIBILITY
+    # VISIBILITY
     s1_fail = any(x in issues_str for x in ["ranking", "category"])
     s1_badge, s1_text = get_status(s1_fail, "Your listing appears for primary keywords.", "Your business is invisible for high-intent 'Near Me' keywords.")
 
-    # 2. CTR
+    # CTR
     if rating < 4.0:
         s2_badge = "<span class='badge badge-fail'>❌ CRITICAL FAIL</span>"
         s2_text = f"<p class='problem-row'>❌ ANALYSIS: Your <strong>{rating} Star Rating</strong> is killing your Click-Through-Rate. Customers filter for 4.0+.</p>"
@@ -41,7 +38,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
         s2_badge = "<span class='badge badge-pass'>✅ PASS</span>"
         s2_text = "<p class='success-row'>✅ ANALYSIS: Listing looks clickable and trustworthy.</p>"
 
-    # 3. WEBSITE (THE FIX)
+    # WEBSITE
     if not has_website:
         s3_badge = "<span class='badge badge-fail'>❌ CRITICAL FAIL</span>"
         s3_text = "<p class='problem-row'>❌ ANALYSIS: <strong>WEBSITE/BOOKING LINK MISSING.</strong> This is the #1 reason customers abandon a listing.</p>"
@@ -49,7 +46,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
         s3_badge = "<span class='badge badge-pass'>✅ PASS</span>"
         s3_text = f"<p class='success-row'>✅ ANALYSIS: Website/Booking link active.</p>"
 
-    # 4. REVIEWS
+    # REVIEWS
     if rev_count > 50 and rating < 4.0:
         s4_badge = "<span class='badge badge-warn'>⚠️ REPUTATION RISK</span>"
         s4_text = f"<p class='problem-row'>⚠️ ANALYSIS: Volume is high ({rev_count}) but Sentiment is Low ({rating}).</p>"
@@ -60,14 +57,14 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
         s4_badge = "<span class='badge badge-pass'>✅ PASS</span>"
         s4_text = f"<p class='success-row'>✅ ANALYSIS: Strong Trust Signals ({rev_count} Reviews).</p>"
 
-    # 5. POSTS
+    # POSTS
     s5_fail = any(x in issues_str for x in ["post", "active"])
     s5_badge, s5_text = get_status(s5_fail, "Active Google Posts detected.", "Zero active Posts. Google prefers 'Alive' businesses.")
 
-    # 6. PHOTOS
+    # PHOTOS
     if photo_count <= 1:
         s6_badge = "<span class='badge badge-warn'>⚠️ VERIFY</span>"
-        s6_text = "<p class='problem-row'>⚠️ ANALYSIS: <strong>Limited Visual Data Detected.</strong> Google is not displaying your portfolio correctly. We need to upload 20+ tagged photos.</p>"
+        s6_text = "<p class='problem-row'>⚠️ ANALYSIS: <strong>Limited Visual Data Detected.</strong> Google is not displaying your portfolio correctly.</p>"
     elif photo_count < 20:
         s6_badge = "<span class='badge badge-fail'>❌ CRITICAL FAIL</span>"
         s6_text = f"<p class='problem-row'>❌ ANALYSIS: Only {photo_count} photos found. Competitors showcase {competitor_avg_photos}+.</p>"
@@ -88,30 +85,89 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
         <style>
             @page {{ size: A4; margin: 10mm; }}
             body {{ font-family: 'DejaVu Sans', sans-serif; color: #222; line-height: 1.4; font-size: 10pt; }}
-            .cover-header {{ background: #111; color: #fff; padding: 30px; text-align: center; border-bottom: 5px solid #D32F2F; margin-bottom: 20px; }}
-            .cover-title {{ font-size: 26pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }}
-            .cover-sub {{ font-size: 12pt; color: #FFD700; margin-top: 10px; }}
+            
+            /* HEADERS & HOOK */
+            .cover-header {{ 
+                background: #111; 
+                color: #fff; 
+                padding: 35px 20px; 
+                text-align: center; 
+                border-bottom: 6px solid #D32F2F; 
+                margin-bottom: 20px; 
+            }}
+            .cover-title {{ font-size: 32pt; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }}
+            .cover-sub {{ font-size: 14pt; color: #FFD700; margin-top: 5px; font-weight: bold; }}
+            .cover-hook {{ 
+                margin-top: 15px; 
+                font-size: 10pt; 
+                color: #ccc; 
+                font-style: italic; 
+                border-top: 1px solid #444; 
+                padding-top: 10px;
+                max-width: 80%;
+                margin-left: auto;
+                margin-right: auto;
+            }}
+            
             h2 {{ color: #D32F2F; border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-top: 20px; font-size: 13pt; text-transform: uppercase; }}
+            
+            /* TABLES & BOXES */
             .benchmark-table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
-            .benchmark-table th {{ background: #333; color: white; padding: 6px; font-size: 9pt; }}
-            .benchmark-table td {{ border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 9pt; }}
+            .benchmark-table th {{ background: #333; color: white; padding: 8px; font-size: 9pt; }}
+            .benchmark-table td {{ border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 10pt; }}
             .my-biz {{ background: #ffe6e6; font-weight: bold; border: 2px solid #D32F2F; }}
+            
             .card {{ border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 4px; page-break-inside: avoid; }}
             .card-header {{ background: #f8f9fa; padding: 6px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; }}
+            
             .badge {{ font-size: 8pt; padding: 2px 6px; border-radius: 4px; color: white; }}
             .badge-fail {{ background: #D32F2F; }} .badge-pass {{ background: #2E7D32; }} .badge-warn {{ background: #F57F17; }}
+            
             .problem-row {{ color: #D32F2F; font-weight: bold; margin-top: 5px; }}
             .success-row {{ color: #2E7D32; font-weight: bold; margin-top: 5px; }}
             .impact-row {{ margin-top: 5px; padding: 5px; background-color: #fff0f0; color: #b71c1c; font-style: italic; border-left: 3px solid #b71c1c; font-size: 9pt; }}
-            .roadmap-box {{ background: #e8f5e9; border: 1px solid #c8e6c9; padding: 15px; margin-top: 15px; }}
-            .cta-link {{ display: block; background-color: #D32F2F; color: white; text-align: center; padding: 15px; text-decoration: none; font-weight: bold; border-radius: 5px; margin-top: 20px; }}
+            
+            /* ROADMAP STYLING */
+            .roadmap-box {{ 
+                background: #F0FDF4; 
+                border: 2px solid #16A34A; 
+                padding: 20px; 
+                margin-top: 15px; 
+                border-radius: 8px;
+            }}
+            .phase {{ margin-bottom: 15px; border-left: 4px solid #16A34A; padding-left: 12px; }}
+            .phase-title {{ font-weight: 800; color: #166534; font-size: 11pt; text-transform: uppercase; }}
+            .phase ul {{ margin: 5px 0 0 0; padding-left: 20px; }}
+            .phase li {{ margin-bottom: 4px; color: #333; }}
+            
+            /* CONVERSION BUTTON (High UI) */
+            .cta-container {{ text-align: center; margin-top: 25px; margin-bottom: 20px; }}
+            .cta-link {{ 
+                display: inline-block;
+                background: linear-gradient(135deg, #D32F2F 0%, #B71C1C 100%);
+                color: white; 
+                text-align: center; 
+                padding: 18px 30px; 
+                text-decoration: none; 
+                font-weight: 800; 
+                font-size: 12pt;
+                border-radius: 8px; 
+                box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4);
+                border-bottom: 4px solid #8E0000;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }}
         </style>
     </head>
     <body>
 
+        <!-- PAGE 1: HOOK & SUMMARY -->
         <div class="cover-header">
             <div class="cover-title">MONEY-LEAK AUDIT</div>
             <div class="cover-sub">Strategy Report for: {business_name}</div>
+            <div class="cover-hook">
+                CONFIDENTIAL: An analysis of why {business_name} is losing market share to competitors—and the exact protocol to reclaim it.
+            </div>
         </div>
 
         <div style="background: #fff0f0; border-left: 5px solid #D32F2F; padding: 15px; font-size: 10pt; margin-bottom: 15px;">
@@ -210,38 +266,41 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
 
         <!-- ROADMAP SECTION -->
         <div class="roadmap-box">
-            <h2 style="color: #2E7D32; border-color: #2E7D32; margin-top: 0;">🚀 THE 90-DAY RECOVERY PLAN</h2>
+            <h2 style="color: #166534; border-color: #16A34A; margin-top: 0; text-align: center;">🚀 THE 90-DAY RECOVERY PROTOCOL</h2>
             
             <div class="phase">
-                <div class="phase-title">PHASE 1: THE FOUNDATION (Days 1-14)</div>
+                <div class="phase-title">PHASE 1: FOUNDATION REPAIR (Days 1-14)</div>
                 <ul>
-                    <li>✅ { 'Build High-Converting Landing Page' if not has_website else 'Audit Website Link' }</li>
-                    <li>✅ Upload 20+ High-Quality "Trust" Photos</li>
-                    <li>✅ Fix Categories & Attributes</li>
+                    <li>✅ <strong>Reconnect Revenue Funnel:</strong> { 'Establish High-Converting Landing Page' if not has_website else 'Technical Audit of Booking Link' }.</li>
+                    <li>✅ <strong>Visual Authority Surge:</strong> Upload 20+ meta-tagged photos to force Google to see you as "Active".</li>
+                    <li>✅ <strong>Category Alignment:</strong> Fix backend signals to match high-intent search terms.</li>
                 </ul>
             </div>
 
             <div class="phase">
-                <div class="phase-title">PHASE 2: AUTHORITY & TRUST (Days 15-45)</div>
+                <div class="phase-title">PHASE 2: TRUST ACCELERATION (Days 15-45)</div>
                 <ul>
-                    <li>🚀 Launch "Review Reactivation" Campaign</li>
-                    <li>🚀 Seed Q&A Section with FAQs</li>
-                    <li>🚀 Write Optimized Business Description</li>
+                    <li>🚀 <strong>Review Reactivation:</strong> Launch SMS campaign to convert past customers into 5-star reviews.</li>
+                    <li>🚀 <strong>Defense Grid:</strong> Seed Q&A section to answer objections before they call.</li>
+                    <li>🚀 <strong>Conversion Copy:</strong> Rewrite business description with psychological triggers.</li>
                 </ul>
             </div>
 
             <div class="phase">
-                <div class="phase-title">PHASE 3: DOMINANCE (Days 45-90)</div>
+                <div class="phase-title">PHASE 3: TOTAL DOMINANCE (Days 45-90)</div>
                 <ul>
-                    <li>🔥 Weekly Google Posts Strategy</li>
-                    <li>🔥 Competitor Monitoring</li>
-                    <li>🔥 Performance Reporting</li>
+                    <li>🔥 <strong>Algorithm Pulse:</strong> Weekly "Offer Posts" to signal constant activity to Google.</li>
+                    <li>🔥 <strong>Competitor Displacement:</strong> Monitor rival rankings and adjust bids to steal their traffic.</li>
+                    <li>🔥 <strong>Revenue Reporting:</strong> Monthly breakdown of calls, clicks, and captured revenue.</li>
                 </ul>
             </div>
             
-            <a href="https://calendly.com/mondal-kiran1980/30min" class="cta-link">
-                👉 Book your Strategy Call to start Phase 1 (Click Here)
-            </a>
+            <div class="cta-container">
+                <a href="https://calendly.com/mondal-kiran1980/30min" class="cta-link">
+                    👉 CLICK TO ACTIVATE PHASE 1 NOW
+                </a>
+                <p style="font-size: 8pt; margin-top: 10px; color: #666;">(Limited availability for new partners in {currency} region)</p>
+            </div>
         </div>
         
         <div style="text-align: center; margin-top: 40px; color: #888; font-size: 8pt;">

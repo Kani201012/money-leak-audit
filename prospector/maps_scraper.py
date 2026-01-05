@@ -6,17 +6,16 @@ import time
 
 def find_leads(keyword, location):
     """
-    MODULE 1: PROSPECTOR (V5.0 - MEDICAL/SERVICE CONTEXT AWARE)
-    Updates:
-    1. Checks 'reservations_link' (Book Online) if website is missing.
-    2. Handles "1 Photo" detection more gracefully.
+    MODULE 1: PROSPECTOR (DEEP TRAWL EDITION)
+    Scans up to 10 Pages (200 listings) to find the rare Low-Rated gems.
+    Strictly filters out anything > 4.2 Stars.
     """
     
     api_key = st.secrets.get("SERPAPI_KEY")
     
-    # Config
-    TARGET_LEAD_COUNT = 30
-    MAX_PAGES = 5
+    # CONFIGURATION: GO DEEP
+    TARGET_LEAD_COUNT = 50  # Aim for 50 bad businesses
+    MAX_PAGES = 10          # Scan up to 200 businesses (Deep Trawl)
     
     cleaned_leads = []
     seen_place_ids = set()
@@ -24,8 +23,11 @@ def find_leads(keyword, location):
     if not api_key: return _simulate_data(keyword, location)
 
     for page in range(MAX_PAGES):
+        
+        # Stop if we have enough
         if len(cleaned_leads) >= TARGET_LEAD_COUNT: break
-        st.toast(f"Scanning Page {page + 1}...", icon="🕵️")
+            
+        st.toast(f"Deep Trawl: Scanning Page {page + 1}...", icon="🦈")
         
         params = {
             "engine": "google_maps",
@@ -44,50 +46,51 @@ def find_leads(keyword, location):
             if not local_results: break
             
             for result in local_results:
-                # --- DEDUPING ---
-                pid = result.get("place_id", str(random.randint(10000,99999)))
+                
+                # Deduping
+                pid = result.get("place_id")
+                if not pid: pid = str(random.randint(10000,99999))
                 if pid in seen_place_ids: continue
                 seen_place_ids.add(pid)
 
-                # --- 1. SMART WEBSITE EXTRACTION (The Fix) ---
-                # Check standard website
-                website = result.get("website")
-                if not website: website = result.get("links", {}).get("website")
+                # Rating Extraction
+                try: rating = float(result.get("rating", 0))
+                except: rating = 0.0
                 
-                # Check for "Book Online" / Reservations (Common for Dentists/Doctors)
-                if not website: website = result.get("reservations_link")
-                if not website: website = result.get("booking_link")
-                if not website: website = result.get("order_online_link")
+                reviews = int(result.get("reviews", 0))
 
-                # --- 2. SMART PHOTO EXTRACTION ---
+                # --- THE STRICT FILTER (The Wall) ---
+                # If rating is > 4.2, THROW IT AWAY.
+                # We only want 4.2, 4.1, 3.8, etc.
+                if rating > 4.2:
+                    continue 
+
+                # --- DATA EXTRACTION ---
                 photo_data = result.get("photos_link")
                 photos_count = 0
                 if isinstance(photo_data, dict):
                     photos_count = photo_data.get("count", 0)
                 
-                # Fallbacks
                 if photos_count == 0 and result.get("thumbnail"): photos_count = 1
                 if photos_count == 0 and result.get("images"): photos_count = len(result.get("images"))
 
-                # --- 3. BASIC DATA ---
-                try: rating = float(result.get("rating", 0))
-                except: rating = 0.0
-                reviews = int(result.get("reviews", 0))
-                
+                website = result.get("website")
+                if not website: website = result.get("links", {}).get("website")
+                if not website: website = result.get("reservations_link")
+
                 phone = result.get("phone")
                 if not phone: phone = result.get("phone_number")
                 if not phone: phone = "N/A"
 
-                # --- 4. MAP LINK ---
                 maps_url = result.get("gps_coordinates", {}).get("link")
                 if not maps_url:
                     query = urllib.parse.quote(f"{result.get('title')} {result.get('address')}")
                     maps_url = f"https://www.google.com/maps/search/?api=1&query={query}"
 
-                # --- 5. WEAKNESS SCORE ---
+                # WEAKNESS SCORE
                 weakness_score = 0
                 if not website: weakness_score += 1000 
-                if rating < 4.0: weakness_score += 500
+                if rating < 3.5: weakness_score += 500
                 if reviews < 10: weakness_score += 200
                 if photos_count < 5: weakness_score += 100
 
@@ -99,7 +102,7 @@ def find_leads(keyword, location):
                     "categories": [result.get("type", "Business")],
                     "phone": phone,
                     "address": result.get("address", "Unknown"),
-                    "website": website, # Now includes Booking Links
+                    "website": website,
                     "photos_count": photos_count,
                     "maps_url": maps_url,
                     "posts_active": False,
@@ -108,7 +111,7 @@ def find_leads(keyword, location):
                 })
                 
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error(f"Error on Page {page+1}: {str(e)}")
             break
             
         time.sleep(0.5)
@@ -117,4 +120,21 @@ def find_leads(keyword, location):
     return cleaned_leads
 
 def _simulate_data(keyword, location):
-    return [] # Removed for brevity
+    import time
+    time.sleep(1)
+    return [
+        {
+            "business_name": f"{keyword} Struggler",
+            "place_id": "SIM_001",
+            "rating": 3.2,
+            "reviews": 8,
+            "categories": [keyword],
+            "phone": "555-0101",
+            "address": f"101 Main St, {location}",
+            "website": None,
+            "photos_count": 1,
+            "maps_url": "https://google.com/maps", 
+            "posts_active": False,
+            "weakness_score": 1500
+        }
+    ]

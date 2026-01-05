@@ -56,10 +56,19 @@ def find_leads(keyword, location):
                 seen_place_ids.add(pid)
 
                 # --- DATA EXTRACTION ---
-                photo_data = result.get("photos_link")
-                photos_count = 0
-                if isinstance(photo_data, dict):
-                    photos_count = photo_data.get("count", 0)
+                # Check 1: photos_link (Standard)
+            photo_data = result.get("photos_link")
+            photos_count = 0
+            if isinstance(photo_data, dict):
+                photos_count = photo_data.get("count", 0)
+            
+            # Check 2: thumbnail (If no count, but thumbnail exists, at least they have 1)
+            if photos_count == 0 and result.get("thumbnail"):
+                photos_count = 1 
+            
+            # Check 3: images list (Rare fallback)
+            if photos_count == 0 and result.get("images"):
+                photos_count = len(result.get("images"))
                 
                 website = result.get("website")
                 if not website: website = result.get("links", {}).get("website")

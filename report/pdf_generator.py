@@ -2,17 +2,16 @@ from weasyprint import HTML
 
 def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_data):
     """
-    MODULE 5: AUDIT REPORT GENERATOR (V3.1 - ACCURACY PATCH)
-    Fixed Logic for: 3.5 Star Ratings, Existing Websites, and Photo Counts.
+    MODULE 5: AUDIT REPORT GENERATOR (V3.2 - FALSE POSITIVE PREVENTION)
     """
     
-    # --- 1. DATA EXTRACTION ---
     issues_str = " ".join([str(i) for i in audit_result['issues']]).lower()
     
+    # Extract Data
     rev_count = lead_data.get('reviews', 0)
     rating = lead_data.get('rating', 0.0)
     
-    # Photo Logic: Handle 0 vs Low
+    # Photo Logic
     photo_count = lead_data.get('photos', 0)
     if photo_count == 0: photo_count = lead_data.get('photos_count', 0)
     
@@ -28,14 +27,13 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
         else:
             return "<span class='badge badge-pass'>✅ PASS</span>", f"<p class='success-row'>✅ ANALYSIS: {success_text}</p>"
 
-    # --- 2. SECTION LOGIC ---
+    # --- LOGIC ---
     
     # 1. VISIBILITY
     s1_fail = any(x in issues_str for x in ["ranking", "category"])
     s1_badge, s1_text = get_status(s1_fail, "Your listing appears for primary keywords.", "Your business is invisible for high-intent 'Near Me' keywords.")
 
     # 2. CTR
-    # If rating is low (3.5), CTR suffers even if they look active
     if rating < 4.0:
         s2_badge = "<span class='badge badge-fail'>❌ CRITICAL FAIL</span>"
         s2_text = f"<p class='problem-row'>❌ ANALYSIS: Your <strong>{rating} Star Rating</strong> is killing your Click-Through-Rate. Customers filter for 4.0+.</p>"
@@ -43,35 +41,34 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
         s2_badge = "<span class='badge badge-pass'>✅ PASS</span>"
         s2_text = "<p class='success-row'>✅ ANALYSIS: Listing looks clickable and trustworthy.</p>"
 
-    # 3. WEBSITE
+    # 3. WEBSITE (Refined)
     if not has_website:
         s3_badge = "<span class='badge badge-fail'>❌ CRITICAL FAIL</span>"
-        s3_text = "<p class='problem-row'>❌ ANALYSIS: <strong>WEBSITE MISSING.</strong> This is the #1 reason customers abandon a listing.</p>"
+        s3_text = "<p class='problem-row'>❌ ANALYSIS: <strong>WEBSITE/BOOKING LINK MISSING.</strong> This is the #1 reason customers abandon a listing.</p>"
     else:
         s3_badge = "<span class='badge badge-pass'>✅ PASS</span>"
-        s3_text = f"<p class='success-row'>✅ ANALYSIS: Website linked successfully.</p>"
+        s3_text = f"<p class='success-row'>✅ ANALYSIS: Website/Booking link active.</p>"
 
-    # 4. REVIEWS (Complex Logic: High Count but Low Rating?)
+    # 4. REVIEWS
     if rev_count > 50 and rating < 4.0:
-        # Case: West Coast Dental (1299 reviews, 3.5 stars)
         s4_badge = "<span class='badge badge-warn'>⚠️ REPUTATION RISK</span>"
-        s4_text = f"<p class='problem-row'>⚠️ ANALYSIS: You have Volume ({rev_count}) but <strong>Low Sentiment ({rating} Stars)</strong>. You are losing customers to 4.8+ competitors.</p>"
+        s4_text = f"<p class='problem-row'>⚠️ ANALYSIS: Volume is high ({rev_count}) but Sentiment is Low ({rating}).</p>"
     elif rev_count < 50:
         s4_badge = "<span class='badge badge-fail'>❌ CRITICAL FAIL</span>"
         s4_text = f"<p class='problem-row'>❌ ANALYSIS: Trust Gap. You have {rev_count} reviews. Market Leaders have {competitor_avg_reviews}+.</p>"
     else:
         s4_badge = "<span class='badge badge-pass'>✅ PASS</span>"
-        s4_text = f"<p class='success-row'>✅ ANALYSIS: Strong Trust Signals: {rating} Stars with {rev_count} Reviews.</p>"
+        s4_text = f"<p class='success-row'>✅ ANALYSIS: Strong Trust Signals ({rev_count} Reviews).</p>"
 
     # 5. POSTS
     s5_fail = any(x in issues_str for x in ["post", "active"])
     s5_badge, s5_text = get_status(s5_fail, "Active Google Posts detected.", "Zero active Posts. Google prefers 'Alive' businesses.")
 
-    # 6. PHOTOS
-    # If 0, scraper likely failed or they have none. If < 20, low authority.
-    if photo_count == 0:
+    # 6. PHOTOS (SMART LOGIC)
+    # If 1-5 photos, it's "Low Visuals", not necessarily "Critical Fail" if the scraper is shallow.
+    if photo_count <= 1:
         s6_badge = "<span class='badge badge-warn'>⚠️ VERIFY</span>"
-        s6_text = "<p class='problem-row'>⚠️ ANALYSIS: No photos detected. This severely hurts conversion.</p>"
+        s6_text = "<p class='problem-row'>⚠️ ANALYSIS: <strong>Limited Visual Data Detected.</strong> Google is not displaying your portfolio correctly. We need to upload 20+ tagged photos.</p>"
     elif photo_count < 20:
         s6_badge = "<span class='badge badge-fail'>❌ CRITICAL FAIL</span>"
         s6_text = f"<p class='problem-row'>❌ ANALYSIS: Only {photo_count} photos found. Competitors showcase {competitor_avg_photos}+.</p>"
@@ -83,7 +80,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
     s7_badge = "<span class='badge badge-warn'>⚠️ RISK DETECTED</span>"
     s8_badge = "<span class='badge badge-warn'>⚠️ LOW SIGNAL</span>"
 
-    # --- HTML CONSTRUCTION ---
+    # --- HTML ---
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -92,28 +89,21 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
         <style>
             @page {{ size: A4; margin: 10mm; }}
             body {{ font-family: 'DejaVu Sans', sans-serif; color: #222; line-height: 1.4; font-size: 10pt; }}
-            
             .cover-header {{ background: #111; color: #fff; padding: 30px; text-align: center; border-bottom: 5px solid #D32F2F; margin-bottom: 20px; }}
             .cover-title {{ font-size: 26pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }}
             .cover-sub {{ font-size: 12pt; color: #FFD700; margin-top: 10px; }}
             h2 {{ color: #D32F2F; border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-top: 20px; font-size: 13pt; text-transform: uppercase; }}
-            
             .benchmark-table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
             .benchmark-table th {{ background: #333; color: white; padding: 6px; font-size: 9pt; }}
             .benchmark-table td {{ border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 9pt; }}
             .my-biz {{ background: #ffe6e6; font-weight: bold; border: 2px solid #D32F2F; }}
-            
             .card {{ border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 4px; page-break-inside: avoid; }}
             .card-header {{ background: #f8f9fa; padding: 6px; font-weight: bold; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; }}
             .badge {{ font-size: 8pt; padding: 2px 6px; border-radius: 4px; color: white; }}
-            .badge-fail {{ background: #D32F2F; }}
-            .badge-pass {{ background: #2E7D32; }}
-            .badge-warn {{ background: #F57F17; }}
-            
+            .badge-fail {{ background: #D32F2F; }} .badge-pass {{ background: #2E7D32; }} .badge-warn {{ background: #F57F17; }}
             .problem-row {{ color: #D32F2F; font-weight: bold; margin-top: 5px; }}
             .success-row {{ color: #2E7D32; font-weight: bold; margin-top: 5px; }}
             .impact-row {{ margin-top: 5px; padding: 5px; background-color: #fff0f0; color: #b71c1c; font-style: italic; border-left: 3px solid #b71c1c; font-size: 9pt; }}
-            
             .roadmap-box {{ background: #e8f5e9; border: 1px solid #c8e6c9; padding: 15px; margin-top: 15px; }}
             .cta-link {{ display: block; background-color: #D32F2F; color: white; text-align: center; padding: 15px; text-decoration: none; font-weight: bold; border-radius: 5px; margin-top: 20px; }}
         </style>
@@ -152,7 +142,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
                 <td>{ '<span class="badge badge-fail">FAIL</span>' if rating < 4.0 else '<span class="badge badge-pass">PASS</span>' }</td>
             </tr>
              <tr>
-                <td>Website</td>
+                <td>Website/Booking</td>
                 <td>Optimized</td>
                 <td class="{ 'my-biz' if not has_website else '' }">{'MISSING' if not has_website else 'Linked'}</td>
                 <td>{s3_badge}</td>
@@ -223,32 +213,11 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
         <div class="roadmap-box">
             <h2 style="color: #2E7D32; border-color: #2E7D32; margin-top: 0;">🚀 THE 90-DAY RECOVERY PLAN</h2>
             
-            <div class="phase">
-                <div class="phase-title">PHASE 1: THE FOUNDATION (Days 1-14)</div>
-                <ul>
-                    <li>✅ { 'Build High-Converting Landing Page' if not has_website else 'Audit Website Link' }</li>
-                    <li>✅ Upload 20+ High-Quality "Trust" Photos</li>
-                    <li>✅ Fix Categories & Attributes</li>
-                </ul>
-            </div>
-
-            <div class="phase">
-                <div class="phase-title">PHASE 2: AUTHORITY & TRUST (Days 15-45)</div>
-                <ul>
-                    <li>🚀 Launch "Review Reactivation" Campaign</li>
-                    <li>🚀 Seed Q&A Section with FAQs</li>
-                    <li>🚀 Write Optimized Business Description</li>
-                </ul>
-            </div>
-
-            <div class="phase">
-                <div class="phase-title">PHASE 3: DOMINANCE (Days 45-90)</div>
-                <ul>
-                    <li>🔥 Weekly Google Posts Strategy</li>
-                    <li>🔥 Competitor Monitoring</li>
-                    <li>🔥 Performance Reporting</li>
-                </ul>
-            </div>
+            <ul>
+                <li>✅ <strong>Phase 1 (Days 1-14):</strong> { 'Build Landing Page' if not has_website else 'Technical Audit' } & Visuals</li>
+                <li>✅ <strong>Phase 2 (Days 15-45):</strong> Reputation Repair (Address the {rating} Star Rating)</li>
+                <li>✅ <strong>Phase 3 (Days 45-90):</strong> Competitor Dominance Strategy</li>
+            </ul>
             
             <a href="https://calendly.com/mondal-kiran1980/30min" class="cta-link">
                 👉 Book your Strategy Call to start Phase 1 (Click Here)
@@ -261,7 +230,6 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
 
     </body>
     </html>
-
     """
     
     return HTML(string=html).write_pdf()

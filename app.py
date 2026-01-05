@@ -23,8 +23,16 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
     
     .stApp {
-        background-color: #F8FAFC; /* Light Blue-Grey Background */
+        background-color: #F8FAFC; 
         font-family: 'Inter', sans-serif;
+    }
+    
+    /* PREVENT STRETCHING ON WIDE SCREENS */
+    .block-container { 
+        max_width: 1000px; 
+        padding-top: 2rem; 
+        padding-bottom: 5rem; 
+        margin: auto; 
     }
     
     /* REMOVE STREAMLIT BRANDING */
@@ -32,9 +40,9 @@ st.markdown("""
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
-    /* CUSTOM HEADLINES */
+    /* HERO TEXT */
     .hero-title {
-        font-size: 3.5rem;
+        font-size: 3rem;
         font-weight: 800;
         text-align: center;
         color: #0F172A;
@@ -42,11 +50,10 @@ st.markdown("""
         margin-bottom: 10px;
     }
     .hero-subtitle {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         color: #64748B;
         text-align: center;
-        margin-bottom: 40px;
-        font-weight: 400;
+        margin-bottom: 30px;
     }
     .gradient-text {
         background: -webkit-linear-gradient(45deg, #4F46E5, #9333EA);
@@ -54,57 +61,44 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
     }
 
-    /* THE AUDIT CARD (WHITE BOX) */
+    /* CARD DESIGN (PROSPECTOR) */
+    .pro-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 10px;
+        border: 1px solid #E2E8F0;
+        border-left: 5px solid #4F46E5;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s;
+    }
+    .pro-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+    
+    .biz-name { font-size: 1.25rem; font-weight: 700; color: #1E293B; margin-bottom: 5px; }
+    .biz-meta { font-size: 0.9rem; color: #64748B; display: flex; gap: 15px; align-items: center; margin-bottom: 10px; }
+    
+    /* BADGES */
+    .rating-badge { background: #FEF3C7; color: #D97706; padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; }
+    .gap-badge { background: #FEE2E2; color: #991B1B; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; }
+    
+    /* AUDIT CARD (AUDITOR) */
     .audit-card {
         background: white;
-        padding: 40px;
-        border-radius: 24px;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        max-width: 900px;
-        margin: 0 auto;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         border: 1px solid #E2E8F0;
     }
 
-    /* INPUT FIELDS STYLING */
-    div[data-baseweb="input"] > div {
-        background-color: #F1F5F9;
-        border-radius: 12px;
-        border: 1px solid #E2E8F0;
-        padding: 5px;
-    }
+    /* NAVIGATION BAR */
+    .nav-link-selected { background-color: #4F46E5 !important; }
     
-    /* GENERATE BUTTON */
+    /* BUTTONS */
     div.stButton > button {
-        background-color: #0F172A;
-        color: white;
-        border-radius: 12px;
-        padding: 15px 30px;
+        border-radius: 8px;
         font-weight: 600;
-        width: 100%;
-        border: none;
-        transition: all 0.3s;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    div.stButton > button:hover {
-        background-color: #1E293B;
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    }
-
-    /* RESULT CARD STYLING */
-    .result-box {
-        background: white;
-        border-radius: 16px;
-        padding: 25px;
-        margin-top: 20px;
-        border-left: 6px solid #4F46E5;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    
-    /* NAVIGATION BAR CLEANUP */
-    .nav-link-selected {
-        background-color: #4F46E5 !important;
+        border: 1px solid #E5E7EB;
+        transition: all 0.2s;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -139,124 +133,64 @@ selected = option_menu(
 # 🔍 VIEW 1: AUDITOR (SINGLE BUSINESS)
 # ==========================================
 if selected == "Auditor":
-    
-    # 1. HERO SECTION
     st.markdown("""
-        <div style="margin-top: 40px;">
+        <div style="margin-top: 30px;">
             <div class="hero-title">
                 Stop pitching websites.<br>
                 Start pitching <span class="gradient-text">Revenue.</span>
             </div>
             <div class="hero-subtitle">
-                Enter a local business's details to calculate exactly how much monthly<br>
-                revenue they are losing to their top competitors.
+                Calculate exactly how much monthly revenue a local business is losing.
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-    # 2. THE AUDIT FORM (CENTERED CARD)
     with st.container():
-        # Using columns to center the card visually (Streamlit hack)
-        _, center_col, _ = st.columns([1, 6, 1])
-        
+        # Centered Card Layout
+        _, center_col, _ = st.columns([1, 8, 1])
         with center_col:
             st.markdown('<div class="audit-card">', unsafe_allow_html=True)
-            
-            # Row 1
             c1, c2 = st.columns(2)
-            with c1:
-                target_name = st.text_input("📍 Target Business Name", placeholder="e.g. Smile Dental Studio")
-            with c2:
-                target_web = st.text_input("🔗 Website URL (Optional)", placeholder="https://smiledental.com")
+            with c1: target_name = st.text_input("📍 Business Name", placeholder="e.g. Smile Dental")
+            with c2: target_loc = st.text_input("🏙️ Location", placeholder="e.g. Chicago, IL")
             
-            # Row 2
-            c3, c4 = st.columns(2)
-            with c3:
-                target_loc = st.text_input("🏙️ Location", placeholder="e.g. Chicago, IL")
-            with c4:
-                target_niche = st.text_input("🎯 Industry / Niche", placeholder="e.g. Dentist")
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            # THE BIG BUTTON
-            audit_btn = st.button("⚡ GENERATE REVENUE AUDIT")
-            
+            st.write("")
+            audit_btn = st.button("⚡ GENERATE AUDIT", use_container_width=True, type="primary")
             st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown('<div style="text-align:center; margin-top:20px; color:#94A3B8; font-size:0.8rem; font-weight:600; letter-spacing:1px;">TRUSTED BY 500+ TOP-TIER AGENCIES GLOBALLY</div>', unsafe_allow_html=True)
 
-    # 3. AUDIT LOGIC
     if audit_btn:
         if not target_name or not target_loc:
-            st.error("Please enter Business Name and Location to run the audit.")
+            st.error("Please enter Name and Location.")
         else:
-            with st.spinner("🛰️ Satellite Audit In Progress... analyzing map pack ranking..."):
-                # Use the existing scraper but specifically for this one business
-                # We search for "Business Name in Location"
+            with st.spinner("Analyzing Map Pack..."):
                 raw_leads = find_leads(target_name, target_loc)
-                
-                # Filter to find the EXACT match (or closest)
-                target_lead = None
-                if raw_leads:
-                    # Simple fuzzy match: take the first result since we searched specifically
-                    target_lead = raw_leads[0] 
+                target_lead = raw_leads[0] if raw_leads else None
                 
                 if not target_lead:
-                    st.warning(f"Could not find '{target_name}' on Google Maps in '{target_loc}'. Try refining the location.")
+                    st.warning(f"Could not find '{target_name}' in '{target_loc}'.")
                 else:
-                    # PROCESS THE LEAD
                     currency_symbol = get_currency_symbol(target_loc)
                     data = normalize_gbp_data(target_lead)
                     audit = calculate_rli_score(data)
-                    roi = calculate_money_loss(audit['rli_score'], 500, 50) # Defaults
+                    roi = calculate_money_loss(audit['rli_score'], 500, 50)
                     
-                    # --- DISPLAY RESULTS (SAAS STYLE) ---
-                    st.markdown("<hr style='margin: 40px 0; border-color: #E2E8F0;'>", unsafe_allow_html=True)
-                    
-                    r1, r2 = st.columns([1, 1])
-                    
+                    st.markdown("<hr>", unsafe_allow_html=True)
+                    r1, r2 = st.columns(2)
                     with r1:
                         st.markdown(f"""
-                        <div class="result-box">
-                            <h3 style="margin:0;">📉 Revenue Leakage Detected</h3>
-                            <div style="font-size: 2.5rem; font-weight: 800; color: #DC2626;">
-                                {currency_symbol}{roi['monthly_loss_min']:,} <span style="font-size:1rem; color:#64748B;">/ month</span>
-                            </div>
-                            <p style="color:#64748B;">Based on {audit['rli_score']}/100 Risk Score</p>
+                        <div style="background:white; padding:20px; border-radius:12px; border-left:5px solid #DC2626; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                            <h3 style="margin:0; color:#DC2626;">📉 Revenue Leakage</h3>
+                            <div style="font-size:2rem; font-weight:800; color:#1E293B;">{currency_symbol}{roi['monthly_loss_min']:,}</div>
+                            <div style="color:#64748B;">Monthly Loss Estimate</div>
                         </div>
                         """, unsafe_allow_html=True)
-                        
                     with r2:
-                        st.markdown(f"""
-                        <div class="result-box" style="border-left-color: #10B981;">
-                            <h3 style="margin:0;">🔍 Audit Summary</h3>
-                            <ul style="margin-top:10px; color:#334155;">
-                                <li><strong>Listing:</strong> {data['name']}</li>
-                                <li><strong>Rating:</strong> {data['rating']} ⭐ ({data['reviews']} reviews)</li>
-                                <li><strong>Website:</strong> {'✅ Linked' if data['has_website'] else '❌ MISSING'}</li>
-                            </ul>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                    # PDF DOWNLOAD
-                    pdf = create_audit_pdf(data['name'], audit, roi, currency_symbol, data)
-                    st.download_button(
-                        label="📄 DOWNLOAD CLIENT REPORT (PDF)",
-                        data=pdf,
-                        file_name=f"{data['name']}_Audit_Report.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
-                    
-                    # ADD TO PIPELINE OPTION
-                    if st.button("📥 SAVE TARGET TO PIPELINE", use_container_width=True):
-                        target_lead['audit_score'] = audit['rli_score']
-                        target_lead['monthly_gap'] = roi['monthly_loss_min']
-                        target_lead['currency'] = currency_symbol
-                        if add_lead(target_lead):
-                            st.success(f"{data['name']} added to Pipeline!")
-                        else:
-                            st.warning("Target already exists in pipeline.")
-
+                        pdf = create_audit_pdf(data['name'], audit, roi, currency_symbol, data)
+                        st.download_button("📄 DOWNLOAD REPORT", data=pdf, file_name=f"{data['name']}_Audit.pdf", mime="application/pdf", use_container_width=True)
+                        if st.button("📥 Add to Pipeline", use_container_width=True):
+                            target_lead['audit_score'], target_lead['monthly_gap'], target_lead['currency'] = audit['rli_score'], roi['monthly_loss_min'], currency_symbol
+                            add_lead(target_lead)
+                            st.success("Added!")
 
 # ==========================================
 # 🌍 VIEW 2: PROSPECTOR (BULK SEARCH)
@@ -265,20 +199,17 @@ elif selected == "Prospector":
     
     with st.container():
         c1, c2, c3 = st.columns([2, 1, 1])
-        with c1:
-            keyword = st.text_input("Industry", placeholder="e.g. Emergency Plumber")
-        with c2:
-            location = st.text_input("Region", placeholder="e.g. Los Angeles")
+        with c1: keyword = st.text_input("Industry", placeholder="e.g. Emergency Plumber")
+        with c2: location = st.text_input("Region", placeholder="e.g. Los Angeles")
         with c3:
             st.write("") 
             st.write("") 
-            run_btn = st.button("🚀 DEPLOY SCAN", use_container_width=True)
+            run_btn = st.button("🚀 DEPLOY SCAN", use_container_width=True, type="primary")
 
-    if 'scan_results' not in st.session_state:
-        st.session_state['scan_results'] = []
+    if 'scan_results' not in st.session_state: st.session_state['scan_results'] = []
 
     if run_btn and keyword and location:
-        with st.spinner("Scanning Market Data..."):
+        with st.spinner("Hunting for weak profiles..."):
             raw_leads = find_leads(keyword, location)
             if not raw_leads:
                 st.warning("No leads found.")
@@ -286,101 +217,108 @@ elif selected == "Prospector":
                 for lead in raw_leads: lead['search_location'] = location 
                 st.session_state['scan_results'] = raw_leads
                 save_scan(keyword, location, raw_leads)
-                st.toast(f"Acquired {len(raw_leads)} Targets", icon="✅")
+                st.toast(f"Found {len(raw_leads)} Targets", icon="✅")
 
     results = st.session_state['scan_results']
     if results:
-        if st.button("Clear Results"):
-            st.session_state['scan_results'] = []
-            st.experimental_rerun()
+        if st.button("Clear Results"): st.session_state['scan_results'] = []; st.experimental_rerun()
             
-         for i, lead in enumerate(results):
+        # CRASH FIX: Use enumerate(results) to create unique keys
+        for i, lead in enumerate(results):
             loc = lead.get('search_location', location) 
             currency_symbol = get_currency_symbol(loc)
             data = normalize_gbp_data(lead)
             audit = calculate_rli_score(data)
             roi = calculate_money_loss(audit['rli_score'], 500, 50) 
             
+            # --- CARD UI ---
             with st.container():
                 c_info, c_actions = st.columns([3, 2])
                 with c_info:
                     st.markdown(f"""
-                    <div class="result-box" style="margin-top:0; padding:15px; border-left:4px solid #4F46E5;">
-                        <h4 style="margin:0; color:#1E293B;">{data['name']}</h4>
-                        <div style="font-size:0.9rem; color:#64748B; margin-top:5px;">
-                            ⭐ {data['rating']} ({data['reviews']}) | 📍 {data['address'][:30]}...
+                    <div class="pro-card">
+                        <div class="biz-name">{data['name']}</div>
+                        <div class="biz-meta">
+                            <span class="rating-badge">⭐ {data['rating']} ({data['reviews']})</span>
+                            <span>📍 {data['address'][:35]}...</span>
                         </div>
-                        <div style="margin-top:8px;">
-                            <span style="background:#FEF2F2; color:#DC2626; padding:2px 8px; border-radius:4px; font-weight:700; font-size:0.8rem;">
-                                GAP: {currency_symbol}{roi['monthly_loss_min']:,}
-                            </span>
+                        <div class="biz-meta">
+                            <span class="gap-badge">GAP: {currency_symbol}{roi['monthly_loss_min']:,}/mo</span>
+                            <span style="font-family:monospace; font-weight:600;">📞 {lead.get('phone', 'N/A')}</span>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
                 
                 with c_actions:
-                    st.write("")
+                    st.write("") # Top alignment
                     b1, b2 = st.columns(2)
                     b3, b4 = st.columns(2)
+                    
+                    # Unique Keys using index 'i'
                     with b1:
                         if lead.get('maps_url'): st.link_button("📍 Map", lead['maps_url'], use_container_width=True)
-                        else: st.button("No Map", disabled=True, key=f"nm_{lead['place_id']}_{i}", use_container_width=True)
+                        else: st.button("No Map", disabled=True, key=f"nm_{i}", use_container_width=True)
                     with b2:
-                        if lead.get('website'): st.link_button("🌐 Web", lead['website'], use_container_width=True)
-                        else: st.button("No Web", disabled=True, key=f"nw_{lead['place_id']}_{i}", use_container_width=True)
+                        if lead.get('website'): st.link_button("🌐 Site", lead['website'], use_container_width=True)
+                        else: st.button("No Web", disabled=True, key=f"nw_{i}", use_container_width=True)
                     with b3:
-                        if st.button("📥 Track", key=f"add_{lead['place_id']}_{i}", use_container_width=True):
+                        if st.button("📥 Track", key=f"add_{i}", use_container_width=True):
                             lead['audit_score'], lead['monthly_gap'], lead['currency'] = audit['rli_score'], roi['monthly_loss_min'], currency_symbol
                             if add_lead(lead): st.toast("Added", icon="✅")
+                            else: st.toast("Already Tracking", icon="⚠️")
                     with b4:
                         pdf = create_audit_pdf(data['name'], audit, roi, currency_symbol, data)
-                        st.download_button("📄 Report", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"dl_{lead['place_id']}_{i}", use_container_width=True)
+                        st.download_button("📄 PDF", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"dl_{i}", use_container_width=True)
+            
+            st.markdown("---") 
 
 # ==========================================
 # 📊 VIEW 3: PIPELINE
 # ==========================================
 elif selected == "Pipeline":
     val, count = get_metrics()
-    st.markdown("## Mission Control")
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Targets", count)
-    m2.metric("Pipeline Value", f"${val:,.0f}")
-    m3.metric("Status", "Active")
+    st.subheader("Mission Control")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Targets", count)
+    c2.metric("Pipeline Value", f"${val:,.0f}")
+    c3.metric("Status", "Active")
     st.divider()
     
     db = load_db()
     if not db: st.info("Pipeline is empty.")
     else:
-        for lead in db:
+        for i, lead in enumerate(db): # Enumerate here too just in case
             sym = lead.get('currency', "$")
             with st.expander(f"{lead['business_name']} | Gap: {sym}{lead.get('monthly_gap', 0):,}"):
+                
                 c_map, c_web, c_regen = st.columns([1, 1, 2])
                 with c_map:
                     if lead.get('maps_url'): st.link_button("📍 Map", lead['maps_url'])
                 with c_web:
                     if lead.get('website'): st.link_button("🌐 Web", lead['website'])
                 with c_regen:
-                    if st.button("📄 Regenerate Report", key=f"regen_{lead['place_id']}"):
+                    if st.button("📄 Regenerate Report", key=f"regen_pipe_{i}"):
                         data = normalize_gbp_data(lead)
                         audit = calculate_rli_score(data)
                         roi = calculate_money_loss(audit['rli_score'], 500, 50)
                         pdf = create_audit_pdf(data['name'], audit, roi, sym, data)
-                        st.download_button("Download Now", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"re_dl_{lead['place_id']}")
+                        st.download_button("Download", data=pdf, file_name=f"{data['name']}_Audit.pdf", key=f"redl_pipe_{i}")
+                
                 st.divider()
                 c1, c2 = st.columns([1, 2])
                 with c1:
-                    new_st = st.selectbox("Status", ["New Lead", "Outreach", "Negotiation", "Won", "Lost"], index=["New Lead", "Outreach", "Negotiation", "Won", "Lost"].index(lead.get('status', "New Lead")), key=f"st_{lead['place_id']}")
+                    new_st = st.selectbox("Status", ["New Lead", "Outreach", "Negotiation", "Won", "Lost"], index=["New Lead", "Outreach", "Negotiation", "Won", "Lost"].index(lead.get('status', "New Lead")), key=f"st_{i}")
                     if new_st != lead.get('status'): update_lead_status(lead['place_id'], new_st); st.experimental_rerun()
-                    if st.button("🗑️ Delete", key=f"del_{lead['place_id']}"): delete_lead(lead['place_id']); st.experimental_rerun()
+                    if st.button("🗑️ Delete", key=f"del_pipe_{i}"): delete_lead(lead['place_id']); st.experimental_rerun()
                 with c2:
                     t1, t2 = st.tabs(["✉️ Email", "📝 Notes"])
                     with t1:
-                        kind = st.radio("Template", ["Initial", "Follow Up"], horizontal=True, key=f"r_{lead['place_id']}")
+                        kind = st.radio("Template", ["Initial", "Follow Up"], horizontal=True, key=f"r_pipe_{i}")
                         s, b = generate_cold_email(lead, f"T1 ({kind})")
-                        st.text_input("Subject", s, key=f"s_{lead['place_id']}")
-                        st.text_area("Body", b, height=150, key=f"b_{lead['place_id']}")
+                        st.text_input("Subject", s, key=f"s_pipe_{i}")
+                        st.text_area("Body", b, height=150, key=f"b_pipe_{i}")
                     with t2:
-                        st.text_area("Notes", lead.get('notes', ''), key=f"n_{lead['place_id']}")
+                        st.text_area("Notes", lead.get('notes', ''), key=f"n_pipe_{i}")
 
 # ==========================================
 # 📈 VIEW 4: ANALYTICS

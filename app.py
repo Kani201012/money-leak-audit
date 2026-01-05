@@ -16,7 +16,7 @@ from modules.scan_history import save_scan, load_history
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="CRGG Growth OS", layout="wide", initial_sidebar_state="collapsed")
 
-# --- CSS INJECTION (SAAS GRADE UI) ---
+# --- CSS INJECTION (SAAS UI) ---
 st.markdown("""
 <style>
     /* GLOBAL FONTS & COLORS */
@@ -27,7 +27,7 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     
-    /* PREVENT STRETCHING ON WIDE SCREENS */
+    /* PREVENT STRETCHING */
     .block-container { 
         max_width: 1000px; 
         padding-top: 2rem; 
@@ -35,7 +35,6 @@ st.markdown("""
         margin: auto; 
     }
     
-    /* REMOVE STREAMLIT BRANDING */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
@@ -61,7 +60,7 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
     }
 
-    /* CARD DESIGN (PROSPECTOR) */
+    /* CARD DESIGN */
     .pro-card {
         background: white;
         border-radius: 12px;
@@ -81,7 +80,7 @@ st.markdown("""
     .rating-badge { background: #FEF3C7; color: #D97706; padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; }
     .gap-badge { background: #FEE2E2; color: #991B1B; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; }
     
-    /* AUDIT CARD (AUDITOR) */
+    /* AUDIT CARD */
     .audit-card {
         background: white;
         padding: 30px;
@@ -90,10 +89,8 @@ st.markdown("""
         border: 1px solid #E2E8F0;
     }
 
-    /* NAVIGATION BAR */
+    /* NAV & BUTTONS */
     .nav-link-selected { background-color: #4F46E5 !important; }
-    
-    /* BUTTONS */
     div.stButton > button {
         border-radius: 8px;
         font-weight: 600;
@@ -152,7 +149,12 @@ if selected == "Auditor":
             st.markdown('<div class="audit-card">', unsafe_allow_html=True)
             c1, c2 = st.columns(2)
             with c1: target_name = st.text_input("📍 Business Name", placeholder="e.g. Smile Dental")
-            with c2: target_loc = st.text_input("🏙️ Location", placeholder="e.g. Chicago, IL")
+            with c2: target_web = st.text_input("🔗 Website (Optional)", placeholder="https://smiledental.com")
+            
+            # Row 2
+            c3, c4 = st.columns(2)
+            with c3: target_loc = st.text_input("🏙️ Location", placeholder="e.g. Chicago, IL")
+            with c4: st.text_input("🎯 Niche", placeholder="e.g. Dentist")
             
             st.write("")
             audit_btn = st.button("⚡ GENERATE AUDIT", use_container_width=True, type="primary")
@@ -173,15 +175,16 @@ if selected == "Auditor":
                     data = normalize_gbp_data(target_lead)
                     
                     # --- MANUAL OVERRIDE (THE FIX) ---
-                    # If the scraper missed the website, but YOU typed it in, use yours.
+                    # If user typed a website, we force it, overriding scraper errors.
                     if target_web and not data['has_website']:
                         data['has_website'] = True
                         data['website'] = target_web
-                        st.toast("⚠️ Scraper missed website, but your manual input saved it!", icon="🔧")
-                        
+                        st.toast("Applied Manual Website Override", icon="🔧")
+
                     audit = calculate_rli_score(data)
                     roi = calculate_money_loss(audit['rli_score'], 500, 50)
                     
+                    # RESULTS DISPLAY
                     st.markdown("<hr>", unsafe_allow_html=True)
                     r1, r2 = st.columns(2)
                     with r1:
@@ -231,7 +234,6 @@ elif selected == "Prospector":
     if results:
         if st.button("Clear Results"): st.session_state['scan_results'] = []; st.experimental_rerun()
             
-        # CRASH FIX: Use enumerate(results) to create unique keys
         for i, lead in enumerate(results):
             loc = lead.get('search_location', location) 
             currency_symbol = get_currency_symbol(loc)
@@ -239,7 +241,6 @@ elif selected == "Prospector":
             audit = calculate_rli_score(data)
             roi = calculate_money_loss(audit['rli_score'], 500, 50) 
             
-            # --- CARD UI ---
             with st.container():
                 c_info, c_actions = st.columns([3, 2])
                 with c_info:
@@ -258,11 +259,10 @@ elif selected == "Prospector":
                     """, unsafe_allow_html=True)
                 
                 with c_actions:
-                    st.write("") # Top alignment
+                    st.write("") 
                     b1, b2 = st.columns(2)
                     b3, b4 = st.columns(2)
                     
-                    # Unique Keys using index 'i'
                     with b1:
                         if lead.get('maps_url'): st.link_button("📍 Map", lead['maps_url'], use_container_width=True)
                         else: st.button("No Map", disabled=True, key=f"nm_{i}", use_container_width=True)
@@ -285,17 +285,17 @@ elif selected == "Prospector":
 # ==========================================
 elif selected == "Pipeline":
     val, count = get_metrics()
-    st.subheader("Mission Control")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Targets", count)
-    c2.metric("Pipeline Value", f"${val:,.0f}")
-    c3.metric("Status", "Active")
+    st.markdown("## Mission Control")
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Targets", count)
+    m2.metric("Pipeline Value", f"${val:,.0f}")
+    m3.metric("Status", "Active")
     st.divider()
     
     db = load_db()
     if not db: st.info("Pipeline is empty.")
     else:
-        for i, lead in enumerate(db): # Enumerate here too just in case
+        for i, lead in enumerate(db): 
             sym = lead.get('currency', "$")
             with st.expander(f"{lead['business_name']} | Gap: {sym}{lead.get('monthly_gap', 0):,}"):
                 

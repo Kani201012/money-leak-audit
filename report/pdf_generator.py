@@ -213,11 +213,32 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
         <div class="roadmap-box">
             <h2 style="color: #2E7D32; border-color: #2E7D32; margin-top: 0;">🚀 THE 90-DAY RECOVERY PLAN</h2>
             
-            <ul>
-                <li>✅ <strong>Phase 1 (Days 1-14):</strong> { 'Build Landing Page' if not has_website else 'Technical Audit' } & Visuals</li>
-                <li>✅ <strong>Phase 2 (Days 15-45):</strong> Reputation Repair (Address the {rating} Star Rating)</li>
-                <li>✅ <strong>Phase 3 (Days 45-90):</strong> Competitor Dominance Strategy</li>
-            </ul>
+            <div class="phase">
+                <div class="phase-title">PHASE 1: THE FOUNDATION (Days 1-14)</div>
+                <ul>
+                    <li>✅ { 'Build High-Converting Landing Page' if not has_website else 'Audit Website Link' }</li>
+                    <li>✅ Upload 20+ High-Quality "Trust" Photos</li>
+                    <li>✅ Fix Categories & Attributes</li>
+                </ul>
+            </div>
+
+            <div class="phase">
+                <div class="phase-title">PHASE 2: AUTHORITY & TRUST (Days 15-45)</div>
+                <ul>
+                    <li>🚀 Launch "Review Reactivation" Campaign</li>
+                    <li>🚀 Seed Q&A Section with FAQs</li>
+                    <li>🚀 Write Optimized Business Description</li>
+                </ul>
+            </div>
+
+            <div class="phase">
+                <div class="phase-title">PHASE 3: DOMINANCE (Days 45-90)</div>
+                <ul>
+                    <li>🔥 Weekly Google Posts Strategy</li>
+                    <li>🔥 Competitor Monitoring</li>
+                    <li>🔥 Performance Reporting</li>
+                </ul>
+            </div>
             
             <a href="https://calendly.com/mondal-kiran1980/30min" class="cta-link">
                 👉 Book your Strategy Call to start Phase 1 (Click Here)
@@ -230,6 +251,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
 
     </body>
     </html>
+
     """
     
     return HTML(string=html).write_pdf()

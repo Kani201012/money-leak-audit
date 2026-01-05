@@ -2,20 +2,20 @@ from weasyprint import HTML
 
 def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_data):
     """
-    MODULE 5: AUDIT REPORT GENERATOR (V3.2 - FALSE POSITIVE PREVENTION)
+    MODULE 5: AUDIT REPORT GENERATOR (V3.3 - WEBSITE DETECTION FIX)
     """
     
     issues_str = " ".join([str(i) for i in audit_result['issues']]).lower()
     
-    # Extract Data
+    # --- DATA EXTRACTION ---
     rev_count = lead_data.get('reviews', 0)
     rating = lead_data.get('rating', 0.0)
     
-    # Photo Logic
     photo_count = lead_data.get('photos', 0)
     if photo_count == 0: photo_count = lead_data.get('photos_count', 0)
     
-    has_website = lead_data.get('website')
+    # CRITICAL FIX: Check both the URL string AND the Boolean flag
+    has_website = lead_data.get('website') or lead_data.get('has_website')
     
     # Benchmarks
     competitor_avg_reviews = 150
@@ -27,7 +27,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
         else:
             return "<span class='badge badge-pass'>✅ PASS</span>", f"<p class='success-row'>✅ ANALYSIS: {success_text}</p>"
 
-    # --- LOGIC ---
+    # --- SECTION LOGIC ---
     
     # 1. VISIBILITY
     s1_fail = any(x in issues_str for x in ["ranking", "category"])
@@ -41,7 +41,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
         s2_badge = "<span class='badge badge-pass'>✅ PASS</span>"
         s2_text = "<p class='success-row'>✅ ANALYSIS: Listing looks clickable and trustworthy.</p>"
 
-    # 3. WEBSITE (Refined)
+    # 3. WEBSITE (THE FIX)
     if not has_website:
         s3_badge = "<span class='badge badge-fail'>❌ CRITICAL FAIL</span>"
         s3_text = "<p class='problem-row'>❌ ANALYSIS: <strong>WEBSITE/BOOKING LINK MISSING.</strong> This is the #1 reason customers abandon a listing.</p>"
@@ -64,8 +64,7 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
     s5_fail = any(x in issues_str for x in ["post", "active"])
     s5_badge, s5_text = get_status(s5_fail, "Active Google Posts detected.", "Zero active Posts. Google prefers 'Alive' businesses.")
 
-    # 6. PHOTOS (SMART LOGIC)
-    # If 1-5 photos, it's "Low Visuals", not necessarily "Critical Fail" if the scraper is shallow.
+    # 6. PHOTOS
     if photo_count <= 1:
         s6_badge = "<span class='badge badge-warn'>⚠️ VERIFY</span>"
         s6_text = "<p class='problem-row'>⚠️ ANALYSIS: <strong>Limited Visual Data Detected.</strong> Google is not displaying your portfolio correctly. We need to upload 20+ tagged photos.</p>"
@@ -251,7 +250,6 @@ def create_audit_pdf(business_name, audit_result, roi_result, currency, lead_dat
 
     </body>
     </html>
-
     """
     
     return HTML(string=html).write_pdf()

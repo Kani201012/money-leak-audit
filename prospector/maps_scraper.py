@@ -6,20 +6,21 @@ import time
 
 def find_leads(keyword, location):
     """
-    MODULE 1: PROSPECTOR (VOLUME & DEDUPING FIX)
-    1. Scrapes up to 5 pages (100 listings).
-    2. Dedupes by Place ID (Prevents Crash).
-    3. Sorts by weakness.
+    MODULE 1: PROSPECTOR (V4.0 - ACCURACY & VOLUME)
+    Features: 
+    1. Pagination (Scrapes up to 5 pages).
+    2. Deep Extraction (Photos/Websites).
+    3. Deduping.
     """
     
     api_key = st.secrets.get("SERPAPI_KEY")
     
-    # Config: More aggressive scanning
-    TARGET_LEAD_COUNT = 30  # Try to get 30 solid leads
-    MAX_PAGES = 5           # Scan up to 5 pages
+    # Config
+    TARGET_LEAD_COUNT = 30
+    MAX_PAGES = 5
     
     cleaned_leads = []
-    seen_place_ids = set() # Track IDs to prevent duplicates
+    seen_place_ids = set()
     
     if not api_key: return _simulate_data(keyword, location)
 
@@ -47,29 +48,24 @@ def find_leads(keyword, location):
             
             for result in local_results:
                 
-                # --- DEDUPING (CRITICAL FIX) ---
+                # --- DEDUPING ---
                 pid = result.get("place_id")
-                if not pid: pid = str(random.randint(10000,99999)) # Fallback if API misses ID
+                if not pid: pid = str(random.randint(10000,99999))
                 
-                if pid in seen_place_ids:
-                    continue # Skip duplicate
+                if pid in seen_place_ids: continue
                 seen_place_ids.add(pid)
 
-                # --- DATA EXTRACTION ---
-                # Check 1: photos_link (Standard)
-            photo_data = result.get("photos_link")
-            photos_count = 0
-            if isinstance(photo_data, dict):
-                photos_count = photo_data.get("count", 0)
-            
-            # Check 2: thumbnail (If no count, but thumbnail exists, at least they have 1)
-            if photos_count == 0 and result.get("thumbnail"):
-                photos_count = 1 
-            
-            # Check 3: images list (Rare fallback)
-            if photos_count == 0 and result.get("images"):
-                photos_count = len(result.get("images"))
+                # --- DEEP PHOTO EXTRACTION (FIX) ---
+                photo_data = result.get("photos_link")
+                photos_count = 0
+                if isinstance(photo_data, dict):
+                    photos_count = photo_data.get("count", 0)
                 
+                # Fallback: Check thumbnail or images list
+                if photos_count == 0 and result.get("thumbnail"): photos_count = 1
+                if photos_count == 0 and result.get("images"): photos_count = len(result.get("images"))
+
+                # --- DEEP WEBSITE CHECK ---
                 website = result.get("website")
                 if not website: website = result.get("links", {}).get("website")
                 
@@ -78,32 +74,32 @@ def find_leads(keyword, location):
                 
                 reviews = int(result.get("reviews", 0))
 
-                # --- RELAXED FILTER (Get More Leads) ---
-                # Only skip absolute perfection (Website + 4.8+ Stars + 100+ Reviews)
+                # --- RATING FILTER ---
+                # Skip "Perfect" businesses (Website + >4.8 Stars + >100 Reviews)
                 if website and rating > 4.8 and reviews > 100:
                     continue 
+
+                # --- PHONE ---
+                phone = result.get("phone")
+                if not phone: phone = result.get("phone_number")
+                if not phone: phone = "N/A"
 
                 # --- MAP LINK ---
                 maps_url = result.get("gps_coordinates", {}).get("link")
                 if not maps_url:
                     query = urllib.parse.quote(f"{result.get('title')} {result.get('address')}")
                     maps_url = f"https://www.google.com/maps/search/?api=1&query={query}"
-                
-                # --- PHONE ---
-                phone = result.get("phone")
-                if not phone: phone = result.get("phone_number")
-                if not phone: phone = "N/A"
 
                 # --- WEAKNESS SCORE ---
                 weakness_score = 0
                 if not website: weakness_score += 1000 
                 if rating < 4.0: weakness_score += 500
                 if reviews < 10: weakness_score += 200
-                if photos_count < 5: weakness_score += 50
+                if phone == "N/A": weakness_score += 100
 
                 cleaned_leads.append({
-                    "business_name": result.get("title", "Unknown"),
-                    "place_id": pid, # Use the Deduped ID
+                    "business_name": result.get("title", "Unknown Business"),
+                    "place_id": pid,
                     "rating": rating,
                     "reviews": reviews,
                     "categories": [result.get("type", "Business")],
@@ -131,10 +127,11 @@ def _simulate_data(keyword, location):
     time.sleep(1)
     return [
         {
-            "business_name": f"{keyword} Sample 1",
+            "business_name": f"{keyword} Struggler",
             "place_id": "SIM_001",
             "rating": 3.2,
             "reviews": 8,
+            "categories": [keyword],
             "phone": "555-0101",
             "address": f"101 Main St, {location}",
             "website": None,

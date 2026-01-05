@@ -6,29 +6,28 @@ import time
 
 def find_leads(keyword, location):
     """
-    MODULE 1: PROSPECTOR (ULTIMATE HUNTER EDITION)
-    Features: 
-    1. Pagination (Scrapes up to 3 pages).
-    2. Strict Filter (Ignores > 4.2 Stars).
-    3. Deep Phone Extraction.
+    MODULE 1: PROSPECTOR (VOLUME & DEDUPING FIX)
+    1. Scrapes up to 5 pages (100 listings).
+    2. Dedupes by Place ID (Prevents Crash).
+    3. Sorts by weakness.
     """
     
     api_key = st.secrets.get("SERPAPI_KEY")
     
-    # Config
-    TARGET_LEAD_COUNT = 20
-    MAX_PAGES = 3
+    # Config: More aggressive scanning
+    TARGET_LEAD_COUNT = 30  # Try to get 30 solid leads
+    MAX_PAGES = 5           # Scan up to 5 pages
     
     cleaned_leads = []
+    seen_place_ids = set() # Track IDs to prevent duplicates
     
     if not api_key: return _simulate_data(keyword, location)
 
-    # --- PAGINATION LOOP ---
     for page in range(MAX_PAGES):
         
         if len(cleaned_leads) >= TARGET_LEAD_COUNT: break
             
-        st.toast(f"Hunting Page {page + 1}...", icon="🕵️")
+        st.toast(f"Scanning Page {page + 1}...", icon="🕵️")
         
         params = {
             "engine": "google_maps",
@@ -47,22 +46,16 @@ def find_leads(keyword, location):
             if not local_results: break
             
             for result in local_results:
-                # --- 1. RATING FILTER (THE WALL) ---
-                try: rating = float(result.get("rating", 0))
-                except: rating = 0.0
                 
-                reviews = int(result.get("reviews", 0))
+                # --- DEDUPING (CRITICAL FIX) ---
+                pid = result.get("place_id")
+                if not pid: pid = str(random.randint(10000,99999)) # Fallback if API misses ID
+                
+                if pid in seen_place_ids:
+                    continue # Skip duplicate
+                seen_place_ids.add(pid)
 
-                # STRICT RULE: Skip anything > 4.2
-                if rating > 4.2: continue 
-
-                # --- 2. DEEP PHONE EXTRACTION ---
-                phone = result.get("phone")
-                if not phone: phone = result.get("phone_number")
-                if not phone: phone = result.get("local_phone")
-                if not phone: phone = "N/A"
-
-                # --- 3. DATA EXTRACTION ---
+                # --- DATA EXTRACTION ---
                 photo_data = result.get("photos_link")
                 photos_count = 0
                 if isinstance(photo_data, dict):
@@ -71,22 +64,37 @@ def find_leads(keyword, location):
                 website = result.get("website")
                 if not website: website = result.get("links", {}).get("website")
                 
-                # --- 4. MAP LINK ---
+                try: rating = float(result.get("rating", 0))
+                except: rating = 0.0
+                
+                reviews = int(result.get("reviews", 0))
+
+                # --- RELAXED FILTER (Get More Leads) ---
+                # Only skip absolute perfection (Website + 4.8+ Stars + 100+ Reviews)
+                if website and rating > 4.8 and reviews > 100:
+                    continue 
+
+                # --- MAP LINK ---
                 maps_url = result.get("gps_coordinates", {}).get("link")
                 if not maps_url:
                     query = urllib.parse.quote(f"{result.get('title')} {result.get('address')}")
                     maps_url = f"https://www.google.com/maps/search/?api=1&query={query}"
+                
+                # --- PHONE ---
+                phone = result.get("phone")
+                if not phone: phone = result.get("phone_number")
+                if not phone: phone = "N/A"
 
-                # --- 5. WEAKNESS SCORE ---
+                # --- WEAKNESS SCORE ---
                 weakness_score = 0
                 if not website: weakness_score += 1000 
-                if rating < 3.5: weakness_score += 500
+                if rating < 4.0: weakness_score += 500
                 if reviews < 10: weakness_score += 200
-                if phone == "N/A": weakness_score += 100
+                if photos_count < 5: weakness_score += 50
 
                 cleaned_leads.append({
-                    "business_name": result.get("title", "Unknown Business"),
-                    "place_id": result.get("place_id", str(random.randint(1000,9999))),
+                    "business_name": result.get("title", "Unknown"),
+                    "place_id": pid, # Use the Deduped ID
                     "rating": rating,
                     "reviews": reviews,
                     "categories": [result.get("type", "Business")],
@@ -114,12 +122,11 @@ def _simulate_data(keyword, location):
     time.sleep(1)
     return [
         {
-            "business_name": f"{keyword} Struggler",
+            "business_name": f"{keyword} Sample 1",
             "place_id": "SIM_001",
             "rating": 3.2,
             "reviews": 8,
-            "categories": [keyword],
-            "phone": "+1 555-0101",
+            "phone": "555-0101",
             "address": f"101 Main St, {location}",
             "website": None,
             "photos_count": 1,

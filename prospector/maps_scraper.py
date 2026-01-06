@@ -8,7 +8,7 @@ def find_leads(keyword, location):
     """
     MODULE 1: PROSPECTOR (DEEP TRAWL EDITION)
     Scans up to 10 Pages (200 listings) to find the rare Low-Rated gems.
-    Strictly filters out anything > 4.2 Stars.
+    Strictly filters out anything > 4.5 Stars.
     """
     
     api_key = st.secrets.get("SERPAPI_KEY")
@@ -60,9 +60,9 @@ def find_leads(keyword, location):
                 reviews = int(result.get("reviews", 0))
 
                 # --- THE STRICT FILTER (The Wall) ---
-                # If rating is > 4.2, THROW IT AWAY.
-                # We only want 4.2, 4.1, 3.8, etc.
-                if rating > 4.2:
+                # If rating is > 4.5, THROW IT AWAY.
+                # We only want 4.5, 4.1, 3.8, etc.
+                if rating > 4.5:
                     continue 
 
                 # --- DATA EXTRACTION ---
